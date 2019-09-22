@@ -467,80 +467,92 @@ var takeResult = function (callback, g, end, isPushstate) {
 
 // import { Entires } from "./entire-interface";
 var entires = {};
-// type phaseYield = Function | boolean | Ready | Start | End;
-// interface Phase extends Generator<> {}
+var callbacks = {};
 /**
  * rikaaaPaging constructor
  * @param idAttribute id attribute of target tag
  * @param anchors nodelist of a tag
  */
 var rikaaaPaging = function (idAttribute, anchors) {
-    var phase = (function () {
-        var readyCallback, startCallback, endCallback, resultCallback, _a, ready, isPushstate, start, end;
+    var e_1, _a;
+    function generatorPhase() {
+        var phase, _a, ready, isPushstate, start, end;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0: return [4 /*yield*/];
                 case 1:
-                    readyCallback = _b.sent();
-                    return [4 /*yield*/];
+                    phase = _b.sent();
+                    _b.label = 2;
                 case 2:
-                    startCallback = _b.sent();
-                    return [4 /*yield*/];
-                case 3:
-                    endCallback = _b.sent();
-                    return [4 /*yield*/];
-                case 4:
-                    resultCallback = _b.sent();
-                    _b.label = 5;
-                case 5:
                     
-                    return [4 /*yield*/, takeReady(readyCallback, phase, anchors)];
-                case 6:
+                    return [4 /*yield*/, takeReady(callbacks.ready, phase, anchors)];
+                case 3:
                     _a = _b.sent(), ready = _a.ready, isPushstate = _a.isPushstate;
-                    return [4 /*yield*/, takeStart(startCallback, phase, ready, idAttribute)];
-                case 7:
+                    return [4 /*yield*/, takeStart(callbacks.start, phase, ready, idAttribute)];
+                case 4:
                     start = _b.sent();
-                    return [4 /*yield*/, takeEnd(endCallback, phase, start)];
-                case 8:
+                    return [4 /*yield*/, takeEnd(callbacks.end, phase, start)];
+                case 5:
                     end = _b.sent();
-                    return [4 /*yield*/, takeResult(resultCallback, phase, end, isPushstate)];
-                case 9:
+                    return [4 /*yield*/, takeResult(callbacks.result, phase, end, isPushstate)];
+                case 6:
                     _b.sent();
-                    return [3 /*break*/, 5];
-                case 10: return [2 /*return*/];
+                    return [3 /*break*/, 2];
+                case 7: return [2 /*return*/];
             }
         });
-    })();
+    }
     replaceState({
         href: self.location.href,
         delay: 0,
         onProgress: function () { },
         timeout: 1000
     }, document.title, self.location.href);
+    // let phase: Generator;
+    var generatorIsReady = true;
     entires.ready = function (callback) {
         if (typeof callback === "undefined")
             callback = function (data) { return data; };
-        phase.next(callback);
+        callbacks.ready = callback;
         return entires;
     };
     entires.start = function (callback) {
         if (typeof callback === "undefined")
             callback = function (data) { return data; };
-        phase.next(callback);
+        callbacks.start = callback;
         return entires;
     };
     entires.end = function (callback) {
         if (typeof callback === "undefined")
             callback = function (data) { return data; };
-        phase.next(callback);
+        callbacks.end = callback;
         return entires;
     };
     entires.result = function (callback) {
         if (typeof callback === "undefined")
             callback = function () { };
-        phase.next(callback);
+        callbacks.result = callback;
+        if (generatorIsReady) {
+            var phase = generatorPhase();
+            phase.next();
+            phase.next(phase);
+            generatorIsReady = false;
+        }
     };
-    phase.next();
+    try {
+        for (var _b = __values(Object.entries(entires)), _c = _b.next(); !_c.done; _c = _b.next()) {
+            var value = _c.value;
+            // console.log(value);
+            value[1]();
+        }
+    }
+    catch (e_1_1) { e_1 = { error: e_1_1 }; }
+    finally {
+        try {
+            if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
+        }
+        finally { if (e_1) throw e_1.error; }
+    }
     return entires;
 };
 

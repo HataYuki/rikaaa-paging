@@ -14,11 +14,9 @@ const ready = fn => {
 
 ready(() => {
   const entires = self.rikaaapaging("test", document.querySelectorAll("a"));
-  entires
-    .ready()
-    .start()
-    .end()
-    .result();
+  // entires.result(data => {
+  //   console.log(data);
+  // });
   // const start = ready.start();
   // const end = start.end();
   // end.result();
