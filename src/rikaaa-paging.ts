@@ -73,34 +73,36 @@ const rikaaaPaging = (idAttribute: string, anchors: Element[]): entires => {
   );
 
   // let phase: Generator;
-  let generatorIsReady = true;
+  const generatorInitialize = (): void => {
+    const phase = generatorPhase();
+    phase.next();
+    phase.next(phase);
+  };
 
   entires.ready = (callback: Function): entires => {
     if (typeof callback === "undefined")
       callback = (data: Ready): Ready => data;
     callbacks.ready = callback;
+    generatorInitialize();
     return entires;
   };
   entires.start = (callback: Function): entires => {
     if (typeof callback === "undefined")
       callback = (data: Start): Start => data;
     callbacks.start = callback;
+    generatorInitialize();
     return entires;
   };
   entires.end = (callback: Function): entires => {
     if (typeof callback === "undefined") callback = (data: End): End => data;
     callbacks.end = callback;
+    generatorInitialize();
     return entires;
   };
   entires.result = (callback: Function): void => {
     if (typeof callback === "undefined") callback = (): void => {};
     callbacks.result = callback;
-    if (generatorIsReady) {
-      const phase = generatorPhase();
-      phase.next();
-      phase.next(phase);
-      generatorIsReady = false;
-    }
+    generatorInitialize();
   };
 
   for (const value of Object.entries(entires)) value[1]();
