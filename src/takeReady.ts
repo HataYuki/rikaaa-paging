@@ -37,7 +37,7 @@ export const takeReady = (
     callbackArg.onProgress = isMouseEvent ? (): void => {} : event.onProgress;
 
     g.next({
-      ready: callbackArg,
+      ready: callback(callbackArg),
       isPushstate: isMouseEvent ? true : false
     });
   };
