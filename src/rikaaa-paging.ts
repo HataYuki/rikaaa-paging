@@ -1,4 +1,3 @@
-// import { Entires } from "./entire-interface";
 import { takeReady, Ready } from "./takeReady";
 import { takeStart, Start } from "./takeStart";
 import { takeEnd, End } from "./takeEnd";
@@ -14,9 +13,6 @@ interface Entires extends Record<string, Function> {
 type entires = Partial<Entires>;
 const entires: entires = {};
 
-// type phaseYield = Function | boolean | Ready | Start | End;
-
-// interface Phase extends Generator<> {}
 interface Callbacks extends Record<string, Function> {
   ready: Function;
   start: Function;

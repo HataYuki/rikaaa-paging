@@ -1,7 +1,7 @@
 import handleClick from "./handleClick";
 import { handlePopstate } from "./history";
 
-export interface Ready extends Record<string, string | number | Function> {
+export interface Ready {
   currentUrl: string;
   href: string;
   delay: number;
@@ -9,8 +9,12 @@ export interface Ready extends Record<string, string | number | Function> {
   onProgress: Function;
 }
 
+interface ReadyEvent extends Ready, MouseEvent {
+  target: HTMLAnchorElement;
+}
+
 /**
- * クリック時にReadyを返す；
+ * クリック/onpopstate時にReadyを返す
  * @param callback readyCallback
  * @param g generator
  * @param anchors nodeList of anchors
@@ -21,33 +25,23 @@ export const takeReady = (
   anchors: Element[]
 ): void => {
   const currentUrl = location.href;
-  const clickEv = (event: { target: HTMLAnchorElement }): void => {
-    const modifiedData = callback({
-      currentUrl,
-      href: event.target.href,
-      deley: 0,
-      timeout: 1000,
-      onProgress: () => {}
-    });
+  const callbackArg: Partial<Ready> = {};
+
+  const event = (event: ReadyEvent): void => {
+    const isMouseEvent = event.type === "click" || event.type ? true : false;
+
+    callbackArg.currentUrl = currentUrl;
+    callbackArg.href = isMouseEvent ? event.target.href : event.href;
+    callbackArg.delay = isMouseEvent ? 0 : event.delay;
+    callbackArg.timeout = isMouseEvent ? 1000 : event.timeout;
+    callbackArg.onProgress = isMouseEvent ? (): void => {} : event.onProgress;
 
     g.next({
-      ready: modifiedData,
-      isPushstate: true
+      ready: callback(callbackArg),
+      isPushstate: isMouseEvent ? true : false
     });
   };
 
-  handleClick(anchors, clickEv);
-
-  const popstateEv = (ready: Ready): void => {
-    const modifiedData = callback({
-      ...ready,
-      currentUrl
-    });
-    g.next({
-      ready: modifiedData,
-      isPushstate: false
-    });
-  };
-
-  handlePopstate(popstateEv);
+  handleClick(anchors, event);
+  handlePopstate(event);
 };

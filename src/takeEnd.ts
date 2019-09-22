@@ -24,31 +24,30 @@ export const takeEnd = (
   g: Generator,
   start: Start
 ): void => {
+  const callbackArg: Partial<End> = {};
   const previousTarget = document.getElementById(start.idAttribute);
   const wraped = elementWrap(previousTarget);
   wraped.removeChild(previousTarget);
   wraped.append(start.target);
 
-  const updatedTarget = elementUnwrap(wraped);
-
   // change title
   document.title = start.title;
   // change meta
-  const metaKeywords = getMeta("keywords", document)[0];
-  const metaDescription = getMeta("description", document)[0];
-  metaKeywords.setAttribute("content", start.keywords.join(","));
-  metaDescription.setAttribute("content", start.description);
+  getMeta("keywords", document)[0].setAttribute(
+    "content",
+    start.keywords.join(",")
+  );
+  getMeta("description", document)[0].setAttribute(
+    "content",
+    start.description
+  );
 
-  const modifiedData = callback({
-    previousTarget,
-    updatedTarget,
-    delay: 0,
-    newUrl: start.response.url,
-    ready: start.ready,
-    start: start
-  });
+  callbackArg.previousTarget = previousTarget;
+  callbackArg.updatedTarget = elementUnwrap(wraped);
+  callbackArg.delay = 0;
+  callbackArg.newUrl = start.response.url;
+  callbackArg.ready = start.ready;
+  callbackArg.start = start;
 
-  Promise.resolve().then(() => {
-    g.next(modifiedData);
-  });
+  Promise.resolve().then(() => g.next(callback(callbackArg)));
 };

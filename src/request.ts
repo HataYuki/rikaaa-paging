@@ -16,8 +16,8 @@ export interface Response {
 export const request = (
   url: string,
   timeout: number,
-  callback: Function,
-  onProgress: Function
+  onProgress: Function,
+  callback: Function
 ): void => {
   oReq.abort();
   oReq.timeout = timeout;
