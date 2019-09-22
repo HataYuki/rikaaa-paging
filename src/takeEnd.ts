@@ -4,13 +4,14 @@ import getMeta from "./getMeta";
 import { elementWrap, elementUnwrap } from "./elementWrap";
 
 export interface End
-  extends Record<string, Element | string | number | Ready | Start> {
+  extends Record<string, Element | string | number | Function | Ready | Start> {
   previousTarget: Element;
   updatedTarget: Element;
   newUrl: string;
-  delay: number;
+  afterDelay: number;
   ready: Ready;
   start: Start;
+  onDelay: Function;
 }
 
 /**
@@ -44,10 +45,12 @@ export const takeEnd = (
 
   callbackArg.previousTarget = previousTarget;
   callbackArg.updatedTarget = elementUnwrap(wraped);
-  callbackArg.delay = 0;
+  callbackArg.afterDelay = 0;
   callbackArg.newUrl = start.response.url;
   callbackArg.ready = start.ready;
   callbackArg.start = start;
+  callbackArg.afterDelay = 0;
+  callbackArg.onDelay = (): void => {};
 
   Promise.resolve().then(() => g.next(callback(callbackArg)));
 };

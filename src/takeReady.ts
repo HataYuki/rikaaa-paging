@@ -4,9 +4,10 @@ import { handlePopstate } from "./history";
 export interface Ready {
   currentUrl: string;
   href: string;
-  delay: number;
+  afterDelay: number;
   timeout: number;
   onProgress: Function;
+  onDelay: Function;
 }
 
 interface ReadyEvent extends Ready, MouseEvent {
@@ -32,9 +33,10 @@ export const takeReady = (
 
     callbackArg.currentUrl = currentUrl;
     callbackArg.href = isMouseEvent ? event.target.href : event.href;
-    callbackArg.delay = isMouseEvent ? 0 : event.delay;
+    callbackArg.afterDelay = isMouseEvent ? 0 : event.afterDelay;
     callbackArg.timeout = isMouseEvent ? 1000 : event.timeout;
     callbackArg.onProgress = isMouseEvent ? (): void => {} : event.onProgress;
+    callbackArg.onDelay = isMouseEvent ? (): void => {} : event.onDelay;
 
     g.next({
       ready: callback(callbackArg),

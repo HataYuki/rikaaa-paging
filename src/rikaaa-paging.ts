@@ -3,6 +3,7 @@ import { takeStart, Start } from "./takeStart";
 import { takeEnd, End } from "./takeEnd";
 import { takeResult } from "./takeResult";
 import { replaceState } from "./history";
+import delay from "./delay";
 
 interface Entires extends Record<string, Function> {
   ready: Function;
@@ -39,13 +40,21 @@ const rikaaaPaging = (idAttribute: string, anchors: Element[]): entires => {
         anchors
       );
 
+      yield delay(ready.afterDelay, phase, ready.onDelay);
+
       const start: Start = yield takeStart(
         callbacks.start,
         phase,
         ready,
         idAttribute
       );
+
+      yield delay(start.afterDelay, phase, start.onDelay);
+
       const end: End = yield takeEnd(callbacks.end, phase, start);
+
+      yield delay(end.afterDelay, phase, end.onDelay);
+
       yield takeResult(callbacks.result, phase, end, isPushstate);
     }
   }
@@ -54,42 +63,46 @@ const rikaaaPaging = (idAttribute: string, anchors: Element[]): entires => {
     {
       currentUrl: location.href,
       href: location.href,
-      delay: 0,
+      afterDelay: 0,
       onProgress: () => {},
-      timeout: 1000
+      timeout: 1000,
+      onDelay: () => {}
     },
     document.title,
     self.location.href
   );
 
   // let phase: Generator;
-  let generatorIsReady = true;
+  const generatorInitialize = (): void => {
+    const phase = generatorPhase();
+    phase.next();
+    phase.next(phase);
+  };
+
   entires.ready = (callback: Function): entires => {
     if (typeof callback === "undefined")
       callback = (data: Ready): Ready => data;
     callbacks.ready = callback;
+    generatorInitialize();
     return entires;
   };
   entires.start = (callback: Function): entires => {
     if (typeof callback === "undefined")
       callback = (data: Start): Start => data;
     callbacks.start = callback;
+    generatorInitialize();
     return entires;
   };
   entires.end = (callback: Function): entires => {
     if (typeof callback === "undefined") callback = (data: End): End => data;
     callbacks.end = callback;
+    generatorInitialize();
     return entires;
   };
   entires.result = (callback: Function): void => {
     if (typeof callback === "undefined") callback = (): void => {};
     callbacks.result = callback;
-    if (generatorIsReady) {
-      const phase = generatorPhase();
-      phase.next();
-      phase.next(phase);
-      generatorIsReady = false;
-    }
+    generatorInitialize();
   };
 
   for (const value of Object.entries(entires)) value[1]();
