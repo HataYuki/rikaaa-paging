@@ -207,9 +207,10 @@ var takeReady = function (callback, g, anchors) {
         var isMouseEvent = event.type === "click" || event.type ? true : false;
         callbackArg.currentUrl = currentUrl;
         callbackArg.href = isMouseEvent ? event.target.href : event.href;
-        callbackArg.delay = isMouseEvent ? 0 : event.delay;
+        callbackArg.afterDelay = isMouseEvent ? 0 : event.afterDelay;
         callbackArg.timeout = isMouseEvent ? 1000 : event.timeout;
         callbackArg.onProgress = isMouseEvent ? function () { } : event.onProgress;
+        callbackArg.onDelay = isMouseEvent ? function () { } : event.onDelay;
         g.next({
             ready: callback(callbackArg),
             isPushstate: isMouseEvent ? true : false
@@ -380,6 +381,8 @@ var takeStart = function (callback, g, ready, idAttribute) {
         callbackArg.keywords = keywords();
         callbackArg.response = response;
         callbackArg.title = isResponseOk ? response.document.title : null;
+        callbackArg.afterDelay = 0;
+        callbackArg.onDelay = function () { };
         g.next(callback(callbackArg));
     });
 };
@@ -425,10 +428,12 @@ var takeEnd = function (callback, g, start) {
     getMeta("description", document)[0].setAttribute("content", start.description);
     callbackArg.previousTarget = previousTarget;
     callbackArg.updatedTarget = elementUnwrap(wraped);
-    callbackArg.delay = 0;
+    callbackArg.afterDelay = 0;
     callbackArg.newUrl = start.response.url;
     callbackArg.ready = start.ready;
     callbackArg.start = start;
+    callbackArg.afterDelay = 0;
+    callbackArg.onDelay = function () { };
     Promise.resolve().then(function () { return g.next(callback(callbackArg)); });
 };
 
@@ -448,6 +453,26 @@ var takeResult = function (callback, g, end, isPushstate) {
     if (isPushstate)
         pushState(end.ready, end.start.title, end.newUrl);
     Promise.resolve().then(function () { return g.next(); });
+};
+
+/**
+ * 指定時間分次のyieldの発火を遅らせる。
+ * @param duraiton 遅らせる時間
+ * @param generator Generatorのインスタンス
+ * @param callback delayが発動するあいだ、発火し続ける関数。引数に0.-1.のパラメーターを返す
+ */
+var delay = function (duraiton, g, callback) {
+    var startTIme = null, req = null;
+    var step = function (timestamp) {
+        if (!startTIme)
+            startTIme = timestamp;
+        var progressTime = timestamp - startTIme;
+        if (progressTime <= duraiton)
+            req = requestAnimationFrame(step), callback(progressTime / duraiton);
+        else
+            cancelAnimationFrame(req), g.next();
+    };
+    req = requestAnimationFrame(step);
 };
 
 var entires = {};
@@ -472,57 +497,69 @@ var rikaaaPaging = function (idAttribute, anchors) {
                     return [4 /*yield*/, takeReady(callbacks.ready, phase, anchors)];
                 case 3:
                     _a = _b.sent(), ready = _a.ready, isPushstate = _a.isPushstate;
-                    return [4 /*yield*/, takeStart(callbacks.start, phase, ready, idAttribute)];
+                    return [4 /*yield*/, delay(ready.afterDelay, phase, ready.onDelay)];
                 case 4:
-                    start = _b.sent();
-                    return [4 /*yield*/, takeEnd(callbacks.end, phase, start)];
+                    _b.sent();
+                    return [4 /*yield*/, takeStart(callbacks.start, phase, ready, idAttribute)];
                 case 5:
-                    end = _b.sent();
-                    return [4 /*yield*/, takeResult(callbacks.result, phase, end, isPushstate)];
+                    start = _b.sent();
+                    return [4 /*yield*/, delay(start.afterDelay, phase, start.onDelay)];
                 case 6:
                     _b.sent();
+                    return [4 /*yield*/, takeEnd(callbacks.end, phase, start)];
+                case 7:
+                    end = _b.sent();
+                    return [4 /*yield*/, delay(end.afterDelay, phase, end.onDelay)];
+                case 8:
+                    _b.sent();
+                    return [4 /*yield*/, takeResult(callbacks.result, phase, end, isPushstate)];
+                case 9:
+                    _b.sent();
                     return [3 /*break*/, 2];
-                case 7: return [2 /*return*/];
+                case 10: return [2 /*return*/];
             }
         });
     }
     replaceState({
         currentUrl: location.href,
         href: location.href,
-        delay: 0,
+        afterDelay: 0,
         onProgress: function () { },
-        timeout: 1000
+        timeout: 1000,
+        onDelay: function () { }
     }, document.title, self.location.href);
     // let phase: Generator;
-    var generatorIsReady = true;
+    var generatorInitialize = function () {
+        var phase = generatorPhase();
+        phase.next();
+        phase.next(phase);
+    };
     entires.ready = function (callback) {
         if (typeof callback === "undefined")
             callback = function (data) { return data; };
         callbacks.ready = callback;
+        generatorInitialize();
         return entires;
     };
     entires.start = function (callback) {
         if (typeof callback === "undefined")
             callback = function (data) { return data; };
         callbacks.start = callback;
+        generatorInitialize();
         return entires;
     };
     entires.end = function (callback) {
         if (typeof callback === "undefined")
             callback = function (data) { return data; };
         callbacks.end = callback;
+        generatorInitialize();
         return entires;
     };
     entires.result = function (callback) {
         if (typeof callback === "undefined")
             callback = function () { };
         callbacks.result = callback;
-        if (generatorIsReady) {
-            var phase = generatorPhase();
-            phase.next();
-            phase.next(phase);
-            generatorIsReady = false;
-        }
+        generatorInitialize();
     };
     try {
         for (var _b = __values(Object.entries(entires)), _c = _b.next(); !_c.done; _c = _b.next()) {
