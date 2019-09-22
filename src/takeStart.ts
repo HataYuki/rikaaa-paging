@@ -30,43 +30,42 @@ export const takeStart = (
   ready: Ready,
   idAttribute: string
 ): void => {
-  const requestCallback = (response: Response): void => {
-    const isResponseOk = response.statusText === "OK" ? true : false;
-    const keywords = (): Array<string> | null => {
-      if (isResponseOk && response.document) {
-        return getMeta("keywords", response.document)[0]
-          .getAttribute("content")
-          .split(",");
-      } else {
-        return null;
-      }
-    };
-    const description = (): string | null => {
-      if (isResponseOk && response.document) {
-        return getMeta("description", response.document)[0].getAttribute(
-          "content"
-        );
-      } else {
-        return null;
-      }
-    };
+  request(
+    ready.href,
+    ready.timeout,
+    ready.onProgress,
+    (response: Response): void => {
+      const callbackArg: Partial<Start> = {};
+      const isResponseOk = response.statusText === "OK" ? true : false;
+      const keywords = (): Array<string> | null => {
+        if (isResponseOk && response.document)
+          return getMeta("keywords", response.document)[0]
+            .getAttribute("content")
+            .split(",");
+        else return null;
+      };
+      const description = (): string | null => {
+        if (isResponseOk && response.document)
+          return getMeta("description", response.document)[0].getAttribute(
+            "content"
+          );
+        else return null;
+      };
 
-    const modifiedResponse = callback({
-      ready,
-      idAttribute,
-      target: isResponseOk
+      callbackArg.ready = ready;
+      callbackArg.idAttribute = idAttribute;
+      callbackArg.target = isResponseOk
         ? response.document.getElementById(idAttribute)
-        : null,
-      classList: isResponseOk
+        : null;
+      callbackArg.classList = isResponseOk
         ? Array.from(response.document.getElementById(idAttribute).classList)
-        : null,
-      description: description(),
-      keywords: keywords(),
-      response,
-      title: isResponseOk ? response.document.title : null
-    });
+        : null;
+      callbackArg.description = description();
+      callbackArg.keywords = keywords();
+      callbackArg.response = response;
+      callbackArg.title = isResponseOk ? response.document.title : null;
 
-    g.next(modifiedResponse);
-  };
-  request(ready.href, ready.timeout, requestCallback, ready.onProgress);
+      g.next(callback(callbackArg));
+    }
+  );
 };
