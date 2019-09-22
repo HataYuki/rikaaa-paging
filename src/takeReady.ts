@@ -14,7 +14,7 @@ interface ReadyEvent extends Ready, MouseEvent {
 }
 
 /**
- * クリック時にReadyを返す；
+ * クリック/onpopstate時にReadyを返す
  * @param callback readyCallback
  * @param g generator
  * @param anchors nodeList of anchors
