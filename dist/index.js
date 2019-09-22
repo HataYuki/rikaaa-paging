@@ -13,13 +13,13 @@ const ready = fn => {
 };
 
 ready(() => {
-  const entires = self.rikaaapaging("test", document.querySelectorAll("a"));
-  entires.result(data => {
-    console.log(data.oldUrl);
-    console.log(data.newUrl);
-    console.log(data.updatedTarget);
-    console.log(data.previousTarget);
-  });
+  self.rikaaapaging("test", document.querySelectorAll("a"));
+  // entires.result(data => {
+  //   console.log(data.oldUrl);
+  //   console.log(data.newUrl);
+  //   console.log(data.updatedTarget);
+  //   console.log(data.previousTarget);
+  // });
   // const start = ready.start();
   // const end = start.end();
   // end.result();
