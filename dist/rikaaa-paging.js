@@ -201,8 +201,10 @@ var handlePopstate = function (callback) {
  * @param anchors nodeList of anchors
  */
 var takeReady = function (callback, g, anchors) {
+    var currentUrl = location.href;
     var clickEv = function (event) {
         var modifiedData = callback({
+            currentUrl: currentUrl,
             href: event.target.href,
             deley: 0,
             timeout: 1000,
@@ -215,7 +217,7 @@ var takeReady = function (callback, g, anchors) {
     };
     handleClick(anchors, clickEv);
     var popstateEv = function (ready) {
-        var modifiedData = callback(__assign({}, ready));
+        var modifiedData = callback(__assign(__assign({}, ready), { currentUrl: currentUrl }));
         g.next({
             ready: modifiedData,
             isPushstate: false
@@ -424,9 +426,9 @@ var elementUnwrap = function (element) {
  * @param start takeGetHTMLの戻り値
  */
 var takeEnd = function (callback, g, start) {
-    var updateTargetElement = document.getElementById(start.idAttribute);
-    var wraped = elementWrap(updateTargetElement);
-    wraped.removeChild(updateTargetElement);
+    var previousTarget = document.getElementById(start.idAttribute);
+    var wraped = elementWrap(previousTarget);
+    wraped.removeChild(previousTarget);
     wraped.append(start.target);
     var updatedTarget = elementUnwrap(wraped);
     // change title
@@ -437,9 +439,10 @@ var takeEnd = function (callback, g, start) {
     metaKeywords.setAttribute("content", start.keywords.join(","));
     metaDescription.setAttribute("content", start.description);
     var modifiedData = callback({
+        previousTarget: previousTarget,
         updatedTarget: updatedTarget,
         delay: 0,
-        url: start.response.url,
+        newUrl: start.response.url,
         ready: start.ready,
         start: start
     });
@@ -456,9 +459,10 @@ var takeEnd = function (callback, g, start) {
  */
 var takeResult = function (callback, g, end, isPushstate) {
     callback({
-        oldUrl: self.location.href,
+        oldUrl: end.ready.currentUrl,
         newUrl: end.ready.href,
-        updatedTarget: end.updatedTarget
+        updatedTarget: end.updatedTarget,
+        previousTarget: end.previousTarget
     });
     if (isPushstate)
         pushState(end.ready, end.start.title, end.newUrl);
@@ -503,7 +507,8 @@ var rikaaaPaging = function (idAttribute, anchors) {
         });
     }
     replaceState({
-        href: self.location.href,
+        currentUrl: location.href,
+        href: location.href,
         delay: 0,
         onProgress: function () { },
         timeout: 1000
@@ -542,7 +547,6 @@ var rikaaaPaging = function (idAttribute, anchors) {
     try {
         for (var _b = __values(Object.entries(entires)), _c = _b.next(); !_c.done; _c = _b.next()) {
             var value = _c.value;
-            // console.log(value);
             value[1]();
         }
     }

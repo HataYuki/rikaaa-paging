@@ -5,6 +5,7 @@ import { elementWrap, elementUnwrap } from "./elementWrap";
 
 export interface End
   extends Record<string, Element | string | number | Ready | Start> {
+  previousTarget: Element;
   updatedTarget: Element;
   newUrl: string;
   delay: number;
@@ -23,9 +24,9 @@ export const takeEnd = (
   g: Generator,
   start: Start
 ): void => {
-  const updateTargetElement = document.getElementById(start.idAttribute);
-  const wraped = elementWrap(updateTargetElement);
-  wraped.removeChild(updateTargetElement);
+  const previousTarget = document.getElementById(start.idAttribute);
+  const wraped = elementWrap(previousTarget);
+  wraped.removeChild(previousTarget);
   wraped.append(start.target);
 
   const updatedTarget = elementUnwrap(wraped);
@@ -39,9 +40,10 @@ export const takeEnd = (
   metaDescription.setAttribute("content", start.description);
 
   const modifiedData = callback({
+    previousTarget,
     updatedTarget,
     delay: 0,
-    url: start.response.url,
+    newUrl: start.response.url,
     ready: start.ready,
     start: start
   });
