@@ -1,8 +1,7 @@
 import handleClick from "./handleClick";
 import { handlePopstate } from "./history";
 
-export interface Ready
-  extends Record<string, string | number | Function | HTMLAnchorElement> {
+export interface Ready {
   currentUrl: string;
   href: string;
   delay: number;
@@ -10,7 +9,7 @@ export interface Ready
   onProgress: Function;
 }
 
-interface ReadyEvent extends Ready {
+interface ReadyEvent extends Ready, MouseEvent {
   target: HTMLAnchorElement;
 }
 
