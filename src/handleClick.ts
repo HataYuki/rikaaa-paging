@@ -10,9 +10,7 @@ const handleClick = (nodeList: Element[] | any[], callback: Function): void => {
     return false;
   };
 
-  nodeList.forEach(node => {
-    node.onclick = onClickEv;
-  });
+  for (let i = 0; i < nodeList.length; i++) nodeList[i].onclick = onClickEv;
 };
 
 export default handleClick;
