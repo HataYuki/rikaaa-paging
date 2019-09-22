@@ -14,6 +14,8 @@ interface Entires {
 type entires = Partial<Entires>;
 const entires: entires = {};
 
+// type phaseYield = Function | boolean | Ready | Start | End;
+
 // interface Phase extends Generator<> {}
 
 /**
@@ -22,21 +24,29 @@ const entires: entires = {};
  * @param anchors nodelist of a tag
  */
 const rikaaaPaging = (idAttribute: string, anchors: Element[]): entires => {
-  const phase = (function*(): Generator<any, any, any> {
-    const readyCallback = yield;
-    const startCallback = yield;
-    const endCallback = yield;
-    const resultCallback = yield;
+  const phase = (function*(): Generator<void, Generator, any> {
+    const readyCallback: Function = yield;
+    const startCallback: Function = yield;
+    const endCallback: Function = yield;
+    const resultCallback: Function = yield;
 
     while (true) {
-      const { ready, isPushstate } = yield takeReady(
+      const {
+        ready,
+        isPushstate
+      }: { ready: Ready; isPushstate: boolean } = yield takeReady(
         readyCallback,
         phase,
         anchors
       );
 
-      const start = yield takeStart(startCallback, phase, ready, idAttribute);
-      const end = yield takeEnd(endCallback, phase, start);
+      const start: Start = yield takeStart(
+        startCallback,
+        phase,
+        ready,
+        idAttribute
+      );
+      const end: End = yield takeEnd(endCallback, phase, start);
       yield takeResult(resultCallback, phase, end, isPushstate);
     }
   })();

@@ -467,6 +467,7 @@ var takeResult = function (callback, g, end, isPushstate) {
 
 // import { Entires } from "./entire-interface";
 var entires = {};
+// type phaseYield = Function | boolean | Ready | Start | End;
 // interface Phase extends Generator<> {}
 /**
  * rikaaaPaging constructor
