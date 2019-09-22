@@ -56,7 +56,8 @@ const rikaaaPaging = (idAttribute: string, anchors: Element[]): entires => {
 
   replaceState(
     {
-      href: self.location.href,
+      currentUrl: location.href,
+      href: location.href,
       delay: 0,
       onProgress: () => {},
       timeout: 1000
@@ -95,10 +96,7 @@ const rikaaaPaging = (idAttribute: string, anchors: Element[]): entires => {
     }
   };
 
-  for (const value of Object.entries(entires)) {
-    // console.log(value);
-    value[1]();
-  }
+  for (const value of Object.entries(entires)) value[1]();
 
   return entires;
 };
