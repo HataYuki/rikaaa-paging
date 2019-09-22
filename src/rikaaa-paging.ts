@@ -5,6 +5,8 @@ import { takeResult } from "./takeResult";
 import { replaceState } from "./history";
 import delay from "./delay";
 
+import "./polyfill/Object.entries";
+
 interface Entires extends Record<string, Function> {
   ready: Function;
   start: Function;
