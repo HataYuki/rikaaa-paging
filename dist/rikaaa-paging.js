@@ -195,35 +195,28 @@ var handlePopstate = function (callback) {
 };
 
 /**
- * クリック時にReadyを返す；
+ * クリック/onpopstate時にReadyを返す
  * @param callback readyCallback
  * @param g generator
  * @param anchors nodeList of anchors
  */
 var takeReady = function (callback, g, anchors) {
     var currentUrl = location.href;
-    var clickEv = function (event) {
-        var modifiedData = callback({
-            currentUrl: currentUrl,
-            href: event.target.href,
-            deley: 0,
-            timeout: 1000,
-            onProgress: function () { }
-        });
+    var callbackArg = {};
+    var event = function (event) {
+        var isMouseEvent = event.type === "click" || event.type ? true : false;
+        callbackArg.currentUrl = currentUrl;
+        callbackArg.href = isMouseEvent ? event.target.href : event.href;
+        callbackArg.delay = isMouseEvent ? 0 : event.delay;
+        callbackArg.timeout = isMouseEvent ? 1000 : event.timeout;
+        callbackArg.onProgress = isMouseEvent ? function () { } : event.onProgress;
         g.next({
-            ready: modifiedData,
-            isPushstate: true
+            ready: callback(callbackArg),
+            isPushstate: isMouseEvent ? true : false
         });
     };
-    handleClick(anchors, clickEv);
-    var popstateEv = function (ready) {
-        var modifiedData = callback(__assign(__assign({}, ready), { currentUrl: currentUrl }));
-        g.next({
-            ready: modifiedData,
-            isPushstate: false
-        });
-    };
-    handlePopstate(popstateEv);
+    handleClick(anchors, event);
+    handlePopstate(event);
 };
 
 // Production steps of ECMA-262, Edition 6, 22.1.2.1
@@ -312,7 +305,7 @@ var oReq = new XMLHttpRequest();
  * @param timeout タイムアウトを設定
  * @param callback 指定した関数の引数として取得情報を渡す
  */
-var request = function (url, timeout, callback, onProgress) {
+var request = function (url, timeout, onProgress, callback) {
     oReq.abort();
     oReq.timeout = timeout;
     oReq.open("GET", url, true);
@@ -358,43 +351,37 @@ var getMeta = function (name, document) {
  * @param idAttribute 更新対象のnodeのID
  */
 var takeStart = function (callback, g, ready, idAttribute) {
-    var requestCallback = function (response) {
+    request(ready.href, ready.timeout, ready.onProgress, function (response) {
+        var callbackArg = {};
         var isResponseOk = response.statusText === "OK" ? true : false;
         var keywords = function () {
-            if (isResponseOk && response.document) {
+            if (isResponseOk && response.document)
                 return getMeta("keywords", response.document)[0]
                     .getAttribute("content")
                     .split(",");
-            }
-            else {
+            else
                 return null;
-            }
         };
         var description = function () {
-            if (isResponseOk && response.document) {
+            if (isResponseOk && response.document)
                 return getMeta("description", response.document)[0].getAttribute("content");
-            }
-            else {
+            else
                 return null;
-            }
         };
-        var modifiedResponse = callback({
-            ready: ready,
-            idAttribute: idAttribute,
-            target: isResponseOk
-                ? response.document.getElementById(idAttribute)
-                : null,
-            classList: isResponseOk
-                ? Array.from(response.document.getElementById(idAttribute).classList)
-                : null,
-            description: description(),
-            keywords: keywords(),
-            response: response,
-            title: isResponseOk ? response.document.title : null
-        });
-        g.next(modifiedResponse);
-    };
-    request(ready.href, ready.timeout, requestCallback, ready.onProgress);
+        callbackArg.ready = ready;
+        callbackArg.idAttribute = idAttribute;
+        callbackArg.target = isResponseOk
+            ? response.document.getElementById(idAttribute)
+            : null;
+        callbackArg.classList = isResponseOk
+            ? Array.from(response.document.getElementById(idAttribute).classList)
+            : null;
+        callbackArg.description = description();
+        callbackArg.keywords = keywords();
+        callbackArg.response = response;
+        callbackArg.title = isResponseOk ? response.document.title : null;
+        g.next(callback(callbackArg));
+    });
 };
 
 /**
@@ -426,29 +413,23 @@ var elementUnwrap = function (element) {
  * @param start takeGetHTMLの戻り値
  */
 var takeEnd = function (callback, g, start) {
+    var callbackArg = {};
     var previousTarget = document.getElementById(start.idAttribute);
     var wraped = elementWrap(previousTarget);
     wraped.removeChild(previousTarget);
     wraped.append(start.target);
-    var updatedTarget = elementUnwrap(wraped);
     // change title
     document.title = start.title;
     // change meta
-    var metaKeywords = getMeta("keywords", document)[0];
-    var metaDescription = getMeta("description", document)[0];
-    metaKeywords.setAttribute("content", start.keywords.join(","));
-    metaDescription.setAttribute("content", start.description);
-    var modifiedData = callback({
-        previousTarget: previousTarget,
-        updatedTarget: updatedTarget,
-        delay: 0,
-        newUrl: start.response.url,
-        ready: start.ready,
-        start: start
-    });
-    Promise.resolve().then(function () {
-        g.next(modifiedData);
-    });
+    getMeta("keywords", document)[0].setAttribute("content", start.keywords.join(","));
+    getMeta("description", document)[0].setAttribute("content", start.description);
+    callbackArg.previousTarget = previousTarget;
+    callbackArg.updatedTarget = elementUnwrap(wraped);
+    callbackArg.delay = 0;
+    callbackArg.newUrl = start.response.url;
+    callbackArg.ready = start.ready;
+    callbackArg.start = start;
+    Promise.resolve().then(function () { return g.next(callback(callbackArg)); });
 };
 
 /**
@@ -469,7 +450,6 @@ var takeResult = function (callback, g, end, isPushstate) {
     Promise.resolve().then(function () { return g.next(); });
 };
 
-// import { Entires } from "./entire-interface";
 var entires = {};
 var callbacks = {};
 /**
