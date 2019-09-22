@@ -6,7 +6,15 @@ import getMeta from "./getMeta";
 export interface Start
   extends Record<
     string,
-    Ready | string | HTMLElement | Array<string> | string | Response | null
+    | Ready
+    | string
+    | HTMLElement
+    | Array<string>
+    | string
+    | Response
+    | number
+    | null
+    | Function
   > {
   ready: Ready;
   idAttribute: string;
@@ -16,6 +24,8 @@ export interface Start
   keywords: Array<string> | null;
   description: string | null;
   response: Response;
+  afterDelay: number;
+  onDelay: Function;
 }
 /**
  * XMLHttprequest通信終了時、データを返す
@@ -64,6 +74,8 @@ export const takeStart = (
       callbackArg.keywords = keywords();
       callbackArg.response = response;
       callbackArg.title = isResponseOk ? response.document.title : null;
+      callbackArg.afterDelay = 0;
+      callbackArg.onDelay = (): void => {};
 
       g.next(callback(callbackArg));
     }

@@ -10,7 +10,7 @@ const delay = (duraiton: number, g: Generator, callback: Function): void => {
   const step = (timestamp): void => {
     if (!startTIme) startTIme = timestamp;
     const progressTime = timestamp - startTIme;
-    if (progressTime < duraiton)
+    if (progressTime <= duraiton)
       (req = requestAnimationFrame(step)), callback(progressTime / duraiton);
     else cancelAnimationFrame(req), g.next();
   };
