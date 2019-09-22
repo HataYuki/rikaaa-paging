@@ -2,6 +2,7 @@ import handleClick from "./handleClick";
 import { handlePopstate } from "./history";
 
 export interface Ready extends Record<string, string | number | Function> {
+  currentUrl: string;
   href: string;
   delay: number;
   timeout: number;
@@ -19,8 +20,10 @@ export const takeReady = (
   g: Generator,
   anchors: Element[]
 ): void => {
+  const currentUrl = location.href;
   const clickEv = (event: { target: HTMLAnchorElement }): void => {
     const modifiedData = callback({
+      currentUrl,
       href: event.target.href,
       deley: 0,
       timeout: 1000,
@@ -37,7 +40,8 @@ export const takeReady = (
 
   const popstateEv = (ready: Ready): void => {
     const modifiedData = callback({
-      ...ready
+      ...ready,
+      currentUrl
     });
     g.next({
       ready: modifiedData,
