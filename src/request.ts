@@ -46,28 +46,4 @@ export const request = (
     }
   };
   oReq.send();
-  // oReq.abort();
-  // oReq.timeout = timeout;
-  // oReq.open("GET", url, true);
-  // oReq.responseType = "document";
-  // oReq.onprogress = (oEvent): void => {
-  //   if (oEvent.lengthComputable) {
-  //     const percentComplete = (oEvent.loaded / oEvent.total) * 100;
-  //     onProgress({ percentComplete });
-  //   } else {
-  //     onProgress({ percentComplete: null });
-  //   }
-  // };
-  // oReq.onreadystatechange = (): void => {
-  //   if (oReq.readyState === 4) {
-  //     console.log(oReq);
-  //     callback({
-  //       document: oReq.responseXML,
-  //       state: oReq.status,
-  //       statusText: oReq.statusText,
-  //       url
-  //     });
-  //   }
-  // };
-  // oReq.send();
 };
