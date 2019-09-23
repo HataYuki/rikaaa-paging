@@ -52,5 +52,6 @@ export const takeEnd = (
   callbackArg.afterDelay = 0;
   callbackArg.onDelay = (): void => {};
 
-  Promise.resolve().then(() => g.next(callback(callbackArg)));
+  // Promise.resolve().then(() => g.next(callback(callbackArg)));
+  setTimeout(() => g.next(callback(callbackArg)), 0);
 };
