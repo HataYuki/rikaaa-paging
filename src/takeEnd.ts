@@ -29,7 +29,7 @@ export const takeEnd = (
   const previousTarget = document.getElementById(start.idAttribute);
   const wraped = elementWrap(previousTarget);
   wraped.removeChild(previousTarget);
-  wraped.append(start.target);
+  wraped.appendChild(start.target);
 
   // change title
   document.title = start.title;
