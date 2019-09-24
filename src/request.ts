@@ -1,11 +1,18 @@
 const oReq = new XMLHttpRequest();
 
 export interface Response {
-  document: Document | null;
+  html: Element | null;
   state: number;
   statusText: string;
   url: string;
 }
+
+const HTMLtextToHTMLElement = (text: string): Element => {
+  const newHTMLElement = document.createElement("html");
+  const innerHTMLText = text.match(/<html[^>]*>([\s\S.]*)<\/html>/i)[1];
+  newHTMLElement.innerHTML = innerHTMLText;
+  return newHTMLElement;
+};
 
 /**
  * XMLHttpRequest
@@ -15,16 +22,11 @@ export interface Response {
  */
 export const request = (
   url: string,
-  timeout: number,
   onProgress: Function,
   callback: Function
 ): void => {
   oReq.abort();
-  oReq.timeout = timeout;
-
   oReq.open("GET", url, true);
-  oReq.responseType = "document";
-
   oReq.onprogress = (oEvent): void => {
     if (oEvent.lengthComputable) {
       const percentComplete = (oEvent.loaded / oEvent.total) * 100;
@@ -33,17 +35,15 @@ export const request = (
       onProgress({ percentComplete: null });
     }
   };
-
   oReq.onreadystatechange = (): void => {
     if (oReq.readyState === 4) {
       callback({
-        document: oReq.responseXML,
+        html: HTMLtextToHTMLElement(oReq.response),
         state: oReq.status,
         statusText: oReq.statusText,
         url
       });
     }
   };
-
   oReq.send();
 };

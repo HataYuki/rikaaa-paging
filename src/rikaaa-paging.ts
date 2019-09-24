@@ -67,7 +67,6 @@ const rikaaaPaging = (idAttribute: string, anchors: Element[]): entires => {
       href: location.href,
       afterDelay: 0,
       onProgress: () => {},
-      timeout: 1000,
       onDelay: () => {}
     },
     document.title,

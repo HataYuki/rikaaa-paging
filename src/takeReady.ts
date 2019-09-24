@@ -5,7 +5,6 @@ export interface Ready {
   currentUrl: string;
   href: string;
   afterDelay: number;
-  timeout: number;
   onProgress: Function;
   onDelay: Function;
 }
@@ -34,7 +33,6 @@ export const takeReady = (
     callbackArg.currentUrl = currentUrl;
     callbackArg.href = isMouseEvent ? event.target.href : event.href;
     callbackArg.afterDelay = isMouseEvent ? 0 : event.afterDelay;
-    callbackArg.timeout = isMouseEvent ? 1000 : event.timeout;
     callbackArg.onProgress = isMouseEvent ? (): void => {} : event.onProgress;
     callbackArg.onDelay = isMouseEvent ? (): void => {} : event.onDelay;
 

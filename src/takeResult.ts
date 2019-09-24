@@ -21,5 +21,6 @@ export const takeResult = (
   });
 
   if (isPushstate) pushState(end.ready, end.start.title, end.newUrl);
-  Promise.resolve().then(() => g.next());
+  // Promise.resolve().then(() => g.next());
+  setTimeout(() => g.next(), 0);
 };

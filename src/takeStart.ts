@@ -40,44 +40,39 @@ export const takeStart = (
   ready: Ready,
   idAttribute: string
 ): void => {
-  request(
-    ready.href,
-    ready.timeout,
-    ready.onProgress,
-    (response: Response): void => {
-      const callbackArg: Partial<Start> = {};
-      const isResponseOk = response.statusText === "OK" ? true : false;
-      const keywords = (): Array<string> | null => {
-        if (isResponseOk && response.document)
-          return getMeta("keywords", response.document)[0]
-            .getAttribute("content")
-            .split(",");
-        else return null;
-      };
-      const description = (): string | null => {
-        if (isResponseOk && response.document)
-          return getMeta("description", response.document)[0].getAttribute(
-            "content"
-          );
-        else return null;
-      };
+  request(ready.href, ready.onProgress, (response: Response): void => {
+    const callbackArg: Partial<Start> = {};
+    const isResponseOk = response.statusText === "OK" ? true : false;
+    const keywords = (): Array<string> | null => {
+      if (isResponseOk && response.html)
+        return getMeta("keywords", response.html)[0]
+          .getAttribute("content")
+          .split(",");
+      else return null;
+    };
+    const description = (): string | null => {
+      if (isResponseOk && response.html)
+        return getMeta("description", response.html)[0].getAttribute("content");
+      else return null;
+    };
 
-      callbackArg.ready = ready;
-      callbackArg.idAttribute = idAttribute;
-      callbackArg.target = isResponseOk
-        ? response.document.getElementById(idAttribute)
-        : null;
-      callbackArg.classList = isResponseOk
-        ? Array.from(response.document.getElementById(idAttribute).classList)
-        : null;
-      callbackArg.description = description();
-      callbackArg.keywords = keywords();
-      callbackArg.response = response;
-      callbackArg.title = isResponseOk ? response.document.title : null;
-      callbackArg.afterDelay = 0;
-      callbackArg.onDelay = (): void => {};
+    callbackArg.ready = ready;
+    callbackArg.idAttribute = idAttribute;
+    callbackArg.target = isResponseOk
+      ? response.html.querySelector(`#${idAttribute}`)
+      : null;
+    callbackArg.classList = isResponseOk
+      ? Array.from(response.html.querySelector(`#${idAttribute}`).classList)
+      : null;
+    callbackArg.description = description();
+    callbackArg.keywords = keywords();
+    callbackArg.response = response;
+    callbackArg.title = isResponseOk
+      ? response.html.querySelector("title").textContent
+      : null;
+    callbackArg.afterDelay = 0;
+    callbackArg.onDelay = (): void => {};
 
-      g.next(callback(callbackArg));
-    }
-  );
+    g.next(callback(callbackArg));
+  });
 };
