@@ -19,7 +19,7 @@
     "prettier": "^1.18.2",
     "rollup-plugin-license": "^0.12.1",
     "rollup-plugin-typescript2": "^0.24.2",
-    "through2": "^3.0.1",
     "typescript": "^3.6.3"
-  }
+  },
+  "dependencies": {}
 }

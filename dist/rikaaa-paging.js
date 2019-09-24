@@ -217,7 +217,6 @@ var takeReady = function (callback, g, anchors) {
         callbackArg.currentUrl = currentUrl;
         callbackArg.href = isMouseEvent ? event.target.href : event.href;
         callbackArg.afterDelay = isMouseEvent ? 0 : event.afterDelay;
-        callbackArg.timeout = isMouseEvent ? 1000 : event.timeout;
         callbackArg.onProgress = isMouseEvent ? function () { } : event.onProgress;
         callbackArg.onDelay = isMouseEvent ? function () { } : event.onDelay;
         g.next({
@@ -309,17 +308,21 @@ if (!Array.from) {
 }
 
 var oReq = new XMLHttpRequest();
+var HTMLtextToHTMLElement = function (text) {
+    var newHTMLElement = document.createElement("html");
+    var innerHTMLText = text.match(/<html[^>]*>([\s\S.]*)<\/html>/i)[1];
+    newHTMLElement.innerHTML = innerHTMLText;
+    return newHTMLElement;
+};
 /**
  * XMLHttpRequest
  * @param url リクエストをかけるURL、
  * @param timeout タイムアウトを設定
  * @param callback 指定した関数の引数として取得情報を渡す
  */
-var request = function (url, timeout, onProgress, callback) {
+var request = function (url, onProgress, callback) {
     oReq.abort();
-    oReq.timeout = timeout;
     oReq.open("GET", url, true);
-    oReq.responseType = "document";
     oReq.onprogress = function (oEvent) {
         if (oEvent.lengthComputable) {
             var percentComplete = (oEvent.loaded / oEvent.total) * 100;
@@ -332,7 +335,7 @@ var request = function (url, timeout, onProgress, callback) {
     oReq.onreadystatechange = function () {
         if (oReq.readyState === 4) {
             callback({
-                document: oReq.responseXML,
+                html: HTMLtextToHTMLElement(oReq.response),
                 state: oReq.status,
                 statusText: oReq.statusText,
                 url: url
@@ -361,35 +364,37 @@ var getMeta = function (name, document) {
  * @param idAttribute 更新対象のnodeのID
  */
 var takeStart = function (callback, g, ready, idAttribute) {
-    request(ready.href, ready.timeout, ready.onProgress, function (response) {
+    request(ready.href, ready.onProgress, function (response) {
         var callbackArg = {};
         var isResponseOk = response.statusText === "OK" ? true : false;
         var keywords = function () {
-            if (isResponseOk && response.document)
-                return getMeta("keywords", response.document)[0]
+            if (isResponseOk && response.html)
+                return getMeta("keywords", response.html)[0]
                     .getAttribute("content")
                     .split(",");
             else
                 return null;
         };
         var description = function () {
-            if (isResponseOk && response.document)
-                return getMeta("description", response.document)[0].getAttribute("content");
+            if (isResponseOk && response.html)
+                return getMeta("description", response.html)[0].getAttribute("content");
             else
                 return null;
         };
         callbackArg.ready = ready;
         callbackArg.idAttribute = idAttribute;
         callbackArg.target = isResponseOk
-            ? response.document.getElementById(idAttribute)
+            ? response.html.querySelector("#" + idAttribute)
             : null;
         callbackArg.classList = isResponseOk
-            ? Array.from(response.document.getElementById(idAttribute).classList)
+            ? Array.from(response.html.querySelector("#" + idAttribute).classList)
             : null;
         callbackArg.description = description();
         callbackArg.keywords = keywords();
         callbackArg.response = response;
-        callbackArg.title = isResponseOk ? response.document.title : null;
+        callbackArg.title = isResponseOk
+            ? response.html.querySelector("title").textContent
+            : null;
         callbackArg.afterDelay = 0;
         callbackArg.onDelay = function () { };
         g.next(callback(callbackArg));
@@ -429,7 +434,7 @@ var takeEnd = function (callback, g, start) {
     var previousTarget = document.getElementById(start.idAttribute);
     var wraped = elementWrap(previousTarget);
     wraped.removeChild(previousTarget);
-    wraped.append(start.target);
+    wraped.appendChild(start.target);
     // change title
     document.title = start.title;
     // change meta
@@ -443,7 +448,8 @@ var takeEnd = function (callback, g, start) {
     callbackArg.start = start;
     callbackArg.afterDelay = 0;
     callbackArg.onDelay = function () { };
-    Promise.resolve().then(function () { return g.next(callback(callbackArg)); });
+    // Promise.resolve().then(() => g.next(callback(callbackArg)));
+    setTimeout(function () { return g.next(callback(callbackArg)); }, 0);
 };
 
 /**
@@ -461,7 +467,8 @@ var takeResult = function (callback, g, end, isPushstate) {
     });
     if (isPushstate)
         pushState(end.ready, end.start.title, end.newUrl);
-    Promise.resolve().then(function () { return g.next(); });
+    // Promise.resolve().then(() => g.next());
+    setTimeout(function () { return g.next(); }, 0);
 };
 
 /**
@@ -534,7 +541,6 @@ var rikaaaPaging = function (idAttribute, anchors) {
         href: location.href,
         afterDelay: 0,
         onProgress: function () { },
-        timeout: 1000,
         onDelay: function () { }
     }, document.title, self.location.href);
     // let phase: Generator;
