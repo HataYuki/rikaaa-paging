@@ -29,7 +29,10 @@ const callbacks: Partial<Callbacks> = {};
  * @param idAttribute id attribute of target tag
  * @param anchors nodelist of a tag
  */
-const rikaaaPaging = (idAttribute: string, anchors: Element[]): entires => {
+const rikaaaPaging = (
+  idAttribute: string,
+  anchors: NodeListOf<HTMLAnchorElement>
+): entires => {
   function* generatorPhase(): Generator<void, Generator, any> {
     const phase: Generator = yield;
     while (true) {
