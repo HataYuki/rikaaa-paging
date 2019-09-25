@@ -386,6 +386,8 @@ var takeStart = function (callback, g, ready, idAttribute) {
     request(ready.href, ready.onProgress, function (response) {
         var callbackArg = {};
         var isResponseOk = response.statusText === "OK" ? true : false;
+        if (!isResponseOk)
+            self.location.href = ready.href;
         var keywords = function () {
             if (isResponseOk && response.html)
                 return getMeta("keywords", response.html)[0]

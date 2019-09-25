@@ -43,6 +43,9 @@ export const takeStart = (
   request(ready.href, ready.onProgress, (response: Response): void => {
     const callbackArg: Partial<Start> = {};
     const isResponseOk = response.statusText === "OK" ? true : false;
+
+    if (!isResponseOk) self.location.href = ready.href;
+
     const keywords = (): Array<string> | null => {
       if (isResponseOk && response.html)
         return getMeta("keywords", response.html)[0]
