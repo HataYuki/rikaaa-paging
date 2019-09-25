@@ -4,6 +4,12 @@ const ts = require("rollup-plugin-typescript2");
 const rename = require("gulp-rename");
 const bs = require("browser-sync");
 
+const webpack = require("webpack");
+const webpackConf = require("./webpack.config");
+
+const karma = require("karma").Server;
+const karmaConf = require("./karma.config");
+
 gulp.task("tsToJs", () => {
   return gulp
     .src("src/**/*.ts")
@@ -40,7 +46,21 @@ gulp.task("watch", () => {
   );
 });
 
-gulp.task(
-  "develop",
-  gulp.series(gulp.task("tsToJs"), gulp.task("initBs"), gulp.task("watch"))
-);
+gulp.task("outputTestJs", cb => {
+  const compiler = webpack(webpackConf);
+  compiler.run(() => cb());
+});
+
+gulp.task("karma", cb => {
+  const server = new karma(karmaConf);
+  server.start();
+  cb();
+});
+
+gulp.task("testWatch", cb => {
+  gulp.watch(["src/**/*.ts", "spec/**/*.spec.ts"], gulp.task("outputTestJs"));
+  cb();
+});
+
+gulp.task("test", gulp.series(["outputTestJs", "karma", "testWatch"]));
+gulp.task("develop", gulp.series(["tsToJs", "initBs", "watch"]));
