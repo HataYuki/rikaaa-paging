@@ -22,7 +22,7 @@ interface ReadyEvent extends Ready, MouseEvent {
 export const takeReady = (
   callback: Function,
   g: Generator,
-  anchors: Element[]
+  anchors: NodeListOf<HTMLAnchorElement>
 ): void => {
   const currentUrl = location.href;
   const callbackArg: Partial<Ready> = {};

@@ -2,7 +2,7 @@ const oReq = new XMLHttpRequest();
 
 export interface Response {
   html: Element | null;
-  state: number;
+  status: number;
   statusText: string;
   url: string;
 }
@@ -38,8 +38,8 @@ export const request = (
   oReq.onreadystatechange = (): void => {
     if (oReq.readyState === 4) {
       callback({
-        html: HTMLtextToHTMLElement(oReq.response),
-        state: oReq.status,
+        html: oReq.status === 200 ? HTMLtextToHTMLElement(oReq.response) : null,
+        status: oReq.status,
         statusText: oReq.statusText,
         url
       });

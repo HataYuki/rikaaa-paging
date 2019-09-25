@@ -10,9 +10,6 @@ module.exports = {
   preprocessors: {
     "./spec/index.spec.html": ["html2js"]
   },
-  // html2JsPreprocessor: {
-  //   stripPrefix: "spec/"
-  // },
   autoWatch: true,
   concurrency: Infinity,
   reporters: ["mocha"],

@@ -98,15 +98,33 @@ function __read(o, n) {
     return ar;
 }
 
+var onebang = (function (func) {
+    var _func, allow = true;
+    return function () {
+        var arg = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            arg[_i] = arguments[_i];
+        }
+        if (!allow) {
+            func = null;
+            return false;
+        }
+        _func = func.apply(this, arg);
+        allow = false;
+        return _func;
+    };
+});
+
 /**
  * 第一引数に指定したノードにクリックイベントを付与し、クリック時にEventを引数で渡す。
  * @param nodeList イヴェントを追加するNodeList
  * @param callback コールバック
  */
 var handleClick = function (nodeList, callback) {
+    var c = onebang(callback);
     var onClickEv = function (e) {
         e.preventDefault();
-        callback(e);
+        c(e);
         return false;
     };
     for (var i = 0; i < nodeList.length; i++)
@@ -198,8 +216,9 @@ var replaceState = function (ready, title, url) {
  * @param callback
  */
 var handlePopstate = function (callback) {
+    var once = onebang(callback);
     self.onpopstate = function (event) {
-        callback(dataParse(__assign({}, event.state)));
+        once(dataParse(__assign({}, event.state)));
     };
 };
 
@@ -335,8 +354,8 @@ var request = function (url, onProgress, callback) {
     oReq.onreadystatechange = function () {
         if (oReq.readyState === 4) {
             callback({
-                html: HTMLtextToHTMLElement(oReq.response),
-                state: oReq.status,
+                html: oReq.status === 200 ? HTMLtextToHTMLElement(oReq.response) : null,
+                status: oReq.status,
                 statusText: oReq.statusText,
                 url: url
             });
@@ -347,8 +366,8 @@ var request = function (url, onProgress, callback) {
 
 /**
  * getMeta metaタグから指定されたname属性をもつElementを返す
- * @param name metaタグのname属性をしていする。
- * @param document document node
+ * @param name metaタグのname属性を指定する。
+ * @param document document
  */
 var getMeta = function (name, document) {
     return Array.from(document.querySelectorAll("meta")).filter(function (meta) {
@@ -412,8 +431,8 @@ var elementWrap = function (element) {
     return wrapElement;
 };
 /**
- * 引数に指定したelementが囲う要素を外に出す。
- * @param element 囲っている対象
+ * 引数に指定したelementが囲う要素を外にだし、出された要素を返す。
+ * @param element 囲いそのもの
  */
 var elementUnwrap = function (element) {
     var wrapElement = element;
@@ -472,23 +491,44 @@ var takeResult = function (callback, g, end, isPushstate) {
 };
 
 /**
+ * 指定時間ディレイする
+ * @param duration ディレイする時間(ms)
+ * @param callback ディレイ中に発火させる関数。コールバックの引数に0.ー1.の値を代入
+ * @param End ディレイ終了後に発火させる関数。callbackの引数が1になった時と同時。
+ */
+var delayMain = function (duration, onDelay, End) {
+    var startTime = null, req = null;
+    var step = function (timestamp) {
+        if (!startTime)
+            startTime = timestamp;
+        var progressTime = timestamp - startTime;
+        if (progressTime <= duration)
+            req = requestAnimationFrame(step), onDelay(progressTime / duration);
+        else
+            cancelAnimationFrame(req), onDelay(1), End();
+    };
+    req = requestAnimationFrame(step);
+};
+/**
  * 指定時間分次のyieldの発火を遅らせる。
- * @param duraiton 遅らせる時間
+ * @param duration 遅らせる時間
  * @param generator Generatorのインスタンス
  * @param callback delayが発動するあいだ、発火し続ける関数。引数に0.-1.のパラメーターを返す
  */
-var delay = function (duraiton, g, callback) {
-    var startTIme = null, req = null;
-    var step = function (timestamp) {
-        if (!startTIme)
-            startTIme = timestamp;
-        var progressTime = timestamp - startTIme;
-        if (progressTime <= duraiton)
-            req = requestAnimationFrame(step), callback(progressTime / duraiton);
-        else
-            cancelAnimationFrame(req), g.next();
-    };
-    req = requestAnimationFrame(step);
+var delay = function (duration, g, callback) {
+    // let startTime = null,
+    //   req = null;
+    // const step = (timestamp): void => {
+    //   if (!startTime) startTime = timestamp;
+    //   const progressTime = timestamp - startTime;
+    //   if (progressTime <= duration)
+    //     (req = requestAnimationFrame(step)), callback(progressTime / duration);
+    //   else cancelAnimationFrame(req), g.next();
+    // };
+    // req = requestAnimationFrame(step);
+    delayMain(duration, callback, function () {
+        g.next();
+    });
 };
 
 var entires = {};
