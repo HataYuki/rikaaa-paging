@@ -1,22 +1,45 @@
 import window from "./index.spec";
-import handleClick from "../src/handleClick";
 import * as assert from "power-assert";
+import handleClick from "../src/handleClick";
 
 describe("handleClick", () => {
-  it("handleClick test", done => {
+  before(() => {
     document.body.innerHTML = window.__html__["spec/index.spec.html"];
+  });
 
+  it("click once test", done => {
     const anchors = document.querySelectorAll("a");
+
     let counter = 0;
-    handleClick(Array.from(anchors), callback => {
-      //   console.log(callback);
+    handleClick(anchors, () => {
       counter++;
     });
 
     anchors[0].click();
-    anchors[0].click();
+    anchors[1].click();
+    anchors[2].click();
+    anchors[3].click();
 
-    setTimeout(() => {
+    setTimeout(function() {
+      assert(counter === 1);
+      done();
+    }, 100);
+  });
+
+  it("click recover test", done => {
+    const anchors = document.querySelectorAll("a");
+
+    let counter = 0;
+    handleClick(anchors, () => {
+      counter++;
+    });
+
+    anchors[0].click();
+    anchors[1].click();
+    anchors[2].click();
+    anchors[3].click();
+
+    setTimeout(function() {
       assert(counter === 1);
       done();
     }, 100);
