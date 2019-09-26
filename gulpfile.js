@@ -10,19 +10,19 @@ const webpackConf = require("./webpack.config");
 const karma = require("karma").Server;
 const karmaConf = require("./karma.config");
 
-const rollup = require("rollup");
-const rollupConf = require("./rollup.config");
-const uglify = require("uglify-es");
 const fs = require("fs-extra");
+const uglify = require("uglify-es");
+
+const gconf = require("./config");
 
 gulp.task("tsToJs", () => {
   return gulp
     .src("src/**/*.ts")
     .pipe(
       gulpRollup({
-        entry: "src/rikaaa-paging.ts",
+        entry: "src/index.ts",
         format: "iife",
-        moduleName: "rikaaapaging",
+        moduleName: gconf.moduleName,
         plugins: [
           ts({
             tsconfig: "tsconfig.json"
@@ -30,27 +30,37 @@ gulp.task("tsToJs", () => {
         ]
       })
     )
-    .pipe(rename("rikaaa-paging.js"))
-    .pipe(gulp.dest("dist"));
+    .pipe(rename("rikaaa-paging.dev.iife.js"))
+    .pipe(gulp.dest("example"));
 });
 
-gulp.task("production", async cb => {
-  const bundle = await rollup.rollup(rollupConf.inputOption);
-  const { output } = await bundle.generate(rollupConf.outputOption);
-  const code = output[0].code;
-  const minCode = uglify.minify(code, {
+gulp.task("production", cb => {
+  const mainFilePath = `dist/${gconf.fileName}.js`;
+  const iifeFilePath = `dist/${gconf.fileName}.iife.js`;
+  const main = fs.readFileSync(mainFilePath);
+  const iife = fs.readFileSync(iifeFilePath);
+
+  const mincodeMain = uglify.minify(main.toString(), {
     output: {
-      comments: /(@license)/
+      comments: /@license/
     }
   }).code;
-  fs.writeFile("./index.js", minCode, () => {
-    cb();
-  });
+
+  const mincodeIife = uglify.minify(iife.toString(), {
+    output: {
+      comments: /@license/
+    }
+  }).code;
+
+  fs.writeFileSync(mainFilePath, mincodeMain);
+  fs.writeFileSync(iifeFilePath, mincodeIife);
+
+  cb();
 });
 
 gulp.task("initBs", cb => {
   bs.init({
-    server: "dist"
+    server: "example"
   });
   cb();
 });

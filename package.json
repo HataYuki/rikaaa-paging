@@ -1,12 +1,12 @@
 {
   "name": "rikaaa-paging",
   "version": "0.5.0",
-  "main": "index.js",
-  "license": "MIT",
+  "main": "dist/rikaaa-paging.js",
+  "license": "Apache-2.0",
   "scripts": {
     "dev": "yarn run gulp develop",
     "test": "yarn run gulp test",
-    "prod":"yarn run gulp production"
+    "prod": "yarn run rollup -c && yarn run gulp production"
   },
   "author": {
     "name": "rikaaa.org | Yuki Hata",
