@@ -29,16 +29,18 @@ export const takeReady = (
 
   const event = (event: ReadyEvent): void => {
     const isMouseEvent = event.type === "click" || event.type ? true : false;
+    const href = isMouseEvent ? event.target.href : event.href;
+    const different = location.href !== href ? true : false;
 
     callbackArg.currentUrl = currentUrl;
-    callbackArg.href = isMouseEvent ? event.target.href : event.href;
+    callbackArg.href = href;
     callbackArg.afterDelay = isMouseEvent ? 0 : event.afterDelay;
     callbackArg.onProgress = isMouseEvent ? (): void => {} : event.onProgress;
     callbackArg.onDelay = isMouseEvent ? (): void => {} : event.onDelay;
 
     g.next({
       ready: callback(callbackArg),
-      isPushstate: isMouseEvent ? true : false
+      isPushstate: isMouseEvent && different ? true : false
     });
   };
 

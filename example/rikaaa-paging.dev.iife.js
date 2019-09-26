@@ -233,14 +233,16 @@ var takeReady = function (callback, g, anchors) {
     var callbackArg = {};
     var event = function (event) {
         var isMouseEvent = event.type === "click" || event.type ? true : false;
+        var href = isMouseEvent ? event.target.href : event.href;
+        var different = location.href !== href ? true : false;
         callbackArg.currentUrl = currentUrl;
-        callbackArg.href = isMouseEvent ? event.target.href : event.href;
+        callbackArg.href = href;
         callbackArg.afterDelay = isMouseEvent ? 0 : event.afterDelay;
         callbackArg.onProgress = isMouseEvent ? function () { } : event.onProgress;
         callbackArg.onDelay = isMouseEvent ? function () { } : event.onDelay;
         g.next({
             ready: callback(callbackArg),
-            isPushstate: isMouseEvent ? true : false
+            isPushstate: isMouseEvent && different ? true : false
         });
     };
     handleClick(anchors, event);
