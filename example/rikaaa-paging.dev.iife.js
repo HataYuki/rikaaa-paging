@@ -528,15 +528,21 @@ var takeResult = function (callback, g, end, isPushstate) {
  * @param End ディレイ終了後に発火させる関数。callbackの引数が1になった時と同時。
  */
 var delayMain = function (duration, onDelay, End) {
-    var startTime = null, req = null;
+    var startTime = performance.now();
+    var req = null, progress, _progress;
     var step = function (timestamp) {
-        if (!startTime)
-            startTime = timestamp;
-        var progressTime = timestamp - startTime;
-        if (progressTime <= duration)
-            req = requestAnimationFrame(step), onDelay(duration === 0 ? 0 : progressTime / duration);
-        else
-            cancelAnimationFrame(req), onDelay(1), End();
+        req = requestAnimationFrame(step);
+        if (duration !== 0) {
+            progress = (timestamp - startTime) / duration;
+            _progress = progress >= 1 ? 1 : progress;
+        }
+        else {
+            progress = 1;
+            _progress = 1;
+        }
+        onDelay(_progress);
+        if (_progress >= 1)
+            cancelAnimationFrame(req), End();
     };
     req = requestAnimationFrame(step);
 };
