@@ -28,11 +28,11 @@ const callbacks: Partial<Callbacks> = {};
 
 /**
  * rikaaaPaging constructor
- * @param idAttribute id attribute of target tag
- * @param anchors nodelist of a tag
+ * @param idAttributes array of id attribute. The id attribute is update target.
+ * @param anchors nodelist of HTML anchor elements.
  */
 const rikaaaPaging = (
-  idAttribute: string,
+  idAttributes: Array<string>,
   anchors: NodeListOf<HTMLAnchorElement>
 ): entires => {
   function* generatorPhase(): Generator<void, Generator, any> {
@@ -53,7 +53,7 @@ const rikaaaPaging = (
         callbacks.start,
         phase,
         ready,
-        idAttribute
+        idAttributes
       );
 
       yield delay(start.afterDelay, phase, start.onDelay);

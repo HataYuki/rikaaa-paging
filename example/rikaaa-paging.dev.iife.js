@@ -380,9 +380,9 @@ var getMeta = function (name, document) {
  * @param callback startCallback
  * @param g generator
  * @param ready takeAnchorsClickの戻り値
- * @param idAttribute 更新対象のnodeのID
+ * @param idAttributes 更新対象のnodeのID
  */
-var takeStart = function (callback, g, ready, idAttribute) {
+var takeStart = function (callback, g, ready, idAttributes) {
     request(ready.href, ready.onProgress, function (response) {
         var callbackArg = {};
         var isResponseOk = response.statusText === "OK" ? true : false;
@@ -403,12 +403,28 @@ var takeStart = function (callback, g, ready, idAttribute) {
                 return null;
         };
         callbackArg.ready = ready;
-        callbackArg.idAttribute = idAttribute;
-        callbackArg.target = isResponseOk
-            ? response.html.querySelector("#" + idAttribute)
+        callbackArg.idAttributes = idAttributes;
+        // callbackArg.targets = isResponseOk
+        //   ? response.html.querySelectorAll(`#${idAttribute}`)
+        //   : null;
+        callbackArg.targets = isResponseOk
+            ? idAttributes.reduce(function (a, c) {
+                var Obj = {};
+                Obj[c] = response.html.querySelector(c);
+                return __assign(__assign({}, a), Obj);
+            }, {})
             : null;
-        callbackArg.classList = isResponseOk
-            ? Array.from(response.html.querySelector("#" + idAttribute).classList)
+        // callbackArg.classList = isResponseOk
+        //   ? Array.from(response.html.querySelector(`#${idAttribute}`).classList)
+        //   : null;
+        callbackArg.classLists = isResponseOk
+            ? idAttributes.reduce(function (a, c) {
+                var Obj = {};
+                var targetElement = response.html.querySelector(c);
+                Obj[c] = targetElement !== null ? targetElement.classList : null;
+                // return Object.assign(a, Obj);
+                return __assign(__assign({}, a), Obj);
+            }, {})
             : null;
         callbackArg.description = description();
         callbackArg.keywords = keywords();
@@ -452,17 +468,28 @@ var elementUnwrap = function (element) {
  */
 var takeEnd = function (callback, g, start) {
     var callbackArg = {};
-    var previousTarget = document.getElementById(start.idAttribute);
-    var wraped = elementWrap(previousTarget);
-    wraped.removeChild(previousTarget);
-    wraped.appendChild(start.target);
+    callbackArg.previousTargets = {};
+    callbackArg.updatedTargets = {};
+    start.idAttributes.forEach(function (id) {
+        var previousTarget = document.querySelector(id);
+        callbackArg.previousTargets[id] = previousTarget;
+        var wraped = previousTarget !== null ? elementWrap(previousTarget) : null;
+        if (wraped !== null && start.targets[id] !== null)
+            wraped.removeChild(previousTarget), wraped.appendChild(start.targets[id]);
+        callbackArg.updatedTargets[id] =
+            wraped !== null ? elementUnwrap(wraped) : null;
+    });
+    // const previousTarget = document.getElementById(start.idAttribute);
+    // const wraped = elementWrap(previousTarget);
+    // wraped.removeChild(previousTarget);
+    // wraped.appendChild(start.target);
     // change title
     document.title = start.title;
     // change meta
     getMeta("keywords", document)[0].setAttribute("content", start.keywords.join(","));
     getMeta("description", document)[0].setAttribute("content", start.description);
-    callbackArg.previousTarget = previousTarget;
-    callbackArg.updatedTarget = elementUnwrap(wraped);
+    // callbackArg.previousTarget = previousTarget;
+    // callbackArg.updatedTarget = elementUnwrap(wraped);
     callbackArg.afterDelay = 0;
     callbackArg.newUrl = start.response.url;
     callbackArg.ready = start.ready;
@@ -546,10 +573,10 @@ var entires = {};
 var callbacks = {};
 /**
  * rikaaaPaging constructor
- * @param idAttribute id attribute of target tag
- * @param anchors nodelist of a tag
+ * @param idAttributes array of id attribute. The id attribute is update target.
+ * @param anchors nodelist of HTML anchor elements.
  */
-var rikaaaPaging = function (idAttribute, anchors) {
+var rikaaaPaging = function (idAttributes, anchors) {
     var e_1, _a;
     function generatorPhase() {
         var phase, _a, ready, isPushstate, start, end;
@@ -567,7 +594,7 @@ var rikaaaPaging = function (idAttribute, anchors) {
                     return [4 /*yield*/, delay(ready.afterDelay, phase, ready.onDelay)];
                 case 4:
                     _b.sent();
-                    return [4 /*yield*/, takeStart(callbacks.start, phase, ready, idAttribute)];
+                    return [4 /*yield*/, takeStart(callbacks.start, phase, ready, idAttributes)];
                 case 5:
                     start = _b.sent();
                     return [4 /*yield*/, delay(start.afterDelay, phase, start.onDelay)];

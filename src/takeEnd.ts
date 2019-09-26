@@ -4,9 +4,18 @@ import getMeta from "./getMeta";
 import { elementWrap, elementUnwrap } from "./elementWrap";
 
 export interface End
-  extends Record<string, Element | string | number | Function | Ready | Start> {
-  previousTarget: Element;
-  updatedTarget: Element;
+  extends Record<
+    string,
+    | Element
+    | string
+    | number
+    | Function
+    | Ready
+    | Start
+    | Record<string, Element | null>
+  > {
+  previousTargets: Record<string, Element | null>;
+  updatedTargets: Record<string, Element | null>;
   newUrl: string;
   afterDelay: number;
   ready: Ready;
@@ -26,10 +35,26 @@ export const takeEnd = (
   start: Start
 ): void => {
   const callbackArg: Partial<End> = {};
-  const previousTarget = document.getElementById(start.idAttribute);
-  const wraped = elementWrap(previousTarget);
-  wraped.removeChild(previousTarget);
-  wraped.appendChild(start.target);
+  callbackArg.previousTargets = {};
+  callbackArg.updatedTargets = {};
+
+  start.idAttributes.forEach(id => {
+    const previousTarget = document.querySelector(id);
+    callbackArg.previousTargets[id] = previousTarget;
+
+    const wraped = previousTarget !== null ? elementWrap(previousTarget) : null;
+
+    if (wraped !== null && start.targets[id] !== null)
+      wraped.removeChild(previousTarget), wraped.appendChild(start.targets[id]);
+
+    callbackArg.updatedTargets[id] =
+      wraped !== null ? elementUnwrap(wraped) : null;
+  });
+
+  // const previousTarget = document.getElementById(start.idAttribute);
+  // const wraped = elementWrap(previousTarget);
+  // wraped.removeChild(previousTarget);
+  // wraped.appendChild(start.target);
 
   // change title
   document.title = start.title;
@@ -43,8 +68,8 @@ export const takeEnd = (
     start.description
   );
 
-  callbackArg.previousTarget = previousTarget;
-  callbackArg.updatedTarget = elementUnwrap(wraped);
+  // callbackArg.previousTarget = previousTarget;
+  // callbackArg.updatedTarget = elementUnwrap(wraped);
   callbackArg.afterDelay = 0;
   callbackArg.newUrl = start.response.url;
   callbackArg.ready = start.ready;

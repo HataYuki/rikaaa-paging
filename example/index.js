@@ -1,3 +1,6 @@
 window.onload = function() {
-  var paging = self.rikaaaPaging("test", this.document.querySelectorAll("a"));
+  var paging = self.rikaaaPaging(
+    ["#header", "#article", "#footer"],
+    this.document.querySelectorAll("a")
+  );
 };

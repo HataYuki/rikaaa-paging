@@ -10,6 +10,7 @@ export interface Start
     | string
     | HTMLElement
     | Array<string>
+    | Record<string, Element | null>
     | string
     | Response
     | number
@@ -17,9 +18,9 @@ export interface Start
     | Function
   > {
   ready: Ready;
-  idAttribute: string;
-  target: HTMLElement | null;
-  classList: Array<string> | null;
+  idAttributes: Array<string>;
+  targets: Record<string, Element | null> | null;
+  classLists: Record<string, Element | null> | null;
   title: string | null;
   keywords: Array<string> | null;
   description: string | null;
@@ -32,13 +33,13 @@ export interface Start
  * @param callback startCallback
  * @param g generator
  * @param ready takeAnchorsClickの戻り値
- * @param idAttribute 更新対象のnodeのID
+ * @param idAttributes 更新対象のnodeのID
  */
 export const takeStart = (
   callback: Function,
   g: Generator,
   ready: Ready,
-  idAttribute: string
+  idAttributes: Array<string>
 ): void => {
   request(ready.href, ready.onProgress, (response: Response): void => {
     const callbackArg: Partial<Start> = {};
@@ -60,12 +61,28 @@ export const takeStart = (
     };
 
     callbackArg.ready = ready;
-    callbackArg.idAttribute = idAttribute;
-    callbackArg.target = isResponseOk
-      ? response.html.querySelector(`#${idAttribute}`)
+    callbackArg.idAttributes = idAttributes;
+    // callbackArg.targets = isResponseOk
+    //   ? response.html.querySelectorAll(`#${idAttribute}`)
+    //   : null;
+    callbackArg.targets = isResponseOk
+      ? idAttributes.reduce((a, c) => {
+          const Obj = {};
+          Obj[c] = response.html.querySelector(c);
+          return { ...a, ...Obj };
+        }, {})
       : null;
-    callbackArg.classList = isResponseOk
-      ? Array.from(response.html.querySelector(`#${idAttribute}`).classList)
+    // callbackArg.classList = isResponseOk
+    //   ? Array.from(response.html.querySelector(`#${idAttribute}`).classList)
+    //   : null;
+    callbackArg.classLists = isResponseOk
+      ? idAttributes.reduce((a, c) => {
+          const Obj = {};
+          const targetElement = response.html.querySelector(c);
+          Obj[c] = targetElement !== null ? targetElement.classList : null;
+          // return Object.assign(a, Obj);
+          return { ...a, ...Obj };
+        }, {})
       : null;
     callbackArg.description = description();
     callbackArg.keywords = keywords();
