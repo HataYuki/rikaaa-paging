@@ -505,7 +505,7 @@ var delayMain = function (duration, onDelay, End) {
             startTime = timestamp;
         var progressTime = timestamp - startTime;
         if (progressTime <= duration)
-            req = requestAnimationFrame(step), onDelay(progressTime / duration);
+            req = requestAnimationFrame(step), onDelay(duration === 0 ? 0 : progressTime / duration);
         else
             cancelAnimationFrame(req), onDelay(1), End();
     };
@@ -518,16 +518,6 @@ var delayMain = function (duration, onDelay, End) {
  * @param callback delayが発動するあいだ、発火し続ける関数。引数に0.-1.のパラメーターを返す
  */
 var delay = function (duration, g, callback) {
-    // let startTime = null,
-    //   req = null;
-    // const step = (timestamp): void => {
-    //   if (!startTime) startTime = timestamp;
-    //   const progressTime = timestamp - startTime;
-    //   if (progressTime <= duration)
-    //     (req = requestAnimationFrame(step)), callback(progressTime / duration);
-    //   else cancelAnimationFrame(req), g.next();
-    // };
-    // req = requestAnimationFrame(step);
     delayMain(duration, callback, function () {
         g.next();
     });
