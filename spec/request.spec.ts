@@ -1,6 +1,10 @@
 import * as assert from "power-assert";
 import { request } from "../src/request";
 
+/**
+ * virtual boxのブラウザなどは、localhostをIPアドレスに変更しないとテストは通らない。
+ */
+
 describe("request", () => {
   it("request success", done => {
     request(

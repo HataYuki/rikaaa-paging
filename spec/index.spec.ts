@@ -4,6 +4,7 @@ import "./elementWrap.spec";
 import "./getMeta.spec";
 import "./dataStringify.spec";
 import "./request.spec";
+import "./error.spec";
 
 interface karmaWindow extends Window {
   __html__: string;
