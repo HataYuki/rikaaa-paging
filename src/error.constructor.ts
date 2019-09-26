@@ -61,6 +61,7 @@ export const checkingEntiresFucArg = (
     haveError.errorTxt = `${entiresKeyName}()${ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_2}`;
 
   if (typeof arg !== "function") return haveError;
-  if (!arg(true) && entiresKeyName !== "hookResult") return haveError;
+  if (!/return/.test(arg.toString()) && entiresKeyName !== "hookResult")
+    return haveError;
   return notHaveError;
 };
