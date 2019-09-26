@@ -1,5 +1,5 @@
 const gulp = require("gulp");
-const rollup = require("gulp-rollup");
+const gulpRollup = require("gulp-rollup");
 const ts = require("rollup-plugin-typescript2");
 const rename = require("gulp-rename");
 const bs = require("browser-sync");
@@ -10,11 +10,16 @@ const webpackConf = require("./webpack.config");
 const karma = require("karma").Server;
 const karmaConf = require("./karma.config");
 
+const rollup = require("rollup");
+const rollupConf = require("./rollup.config");
+const uglify = require("uglify-es");
+const fs = require("fs-extra");
+
 gulp.task("tsToJs", () => {
   return gulp
     .src("src/**/*.ts")
     .pipe(
-      rollup({
+      gulpRollup({
         entry: "src/rikaaa-paging.ts",
         format: "iife",
         moduleName: "rikaaapaging",
@@ -27,6 +32,20 @@ gulp.task("tsToJs", () => {
     )
     .pipe(rename("rikaaa-paging.js"))
     .pipe(gulp.dest("dist"));
+});
+
+gulp.task("production", async cb => {
+  const bundle = await rollup.rollup(rollupConf.inputOption);
+  const { output } = await bundle.generate(rollupConf.outputOption);
+  const code = output[0].code;
+  const minCode = uglify.minify(code, {
+    output: {
+      comments: /(@license)/
+    }
+  }).code;
+  fs.writeFile("./index.js", minCode, () => {
+    cb();
+  });
 });
 
 gulp.task("initBs", cb => {
