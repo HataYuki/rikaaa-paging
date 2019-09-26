@@ -67,7 +67,7 @@ gulp.task("initBs", cb => {
 
 gulp.task("watch", () => {
   return gulp.watch(
-    ["dist/*.html", "src/**/*.ts", "dist/index.js"],
+    ["example/*.html", "src/**/*.ts", "example/index.js"],
     gulp.series(gulp.task("tsToJs"), cb => {
       bs.reload();
       cb();
