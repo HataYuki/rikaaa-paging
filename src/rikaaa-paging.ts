@@ -5,24 +5,30 @@ import { takeResult } from "./takeResult";
 import { replaceState } from "./history";
 import delay from "./delay";
 import curve from "./curve";
+import Error from "./errorInterface";
+import {
+  checkingIdAttribute,
+  checkingAnchors,
+  checkingEntiresFucArg
+} from "./error.constructor";
 
 import "./polyfill/Object.entries";
 
 interface Entires extends Record<string, Function> {
-  ready: Function;
-  start: Function;
-  end: Function;
-  result: Function;
+  hookReay: Function;
+  hookStart: Function;
+  hookEnd: Function;
+  hookResult: Function;
   curve: Function;
 }
 type entires = Partial<Entires>;
 const entires: entires = {};
 
 interface Callbacks extends Record<string, Function> {
-  ready: Function;
-  start: Function;
-  end: Function;
-  result: Function;
+  hookReady: Function;
+  hookStart: Function;
+  hookEnd: Function;
+  hookResult: Function;
 }
 const callbacks: Partial<Callbacks> = {};
 
@@ -35,6 +41,12 @@ const rikaaaPaging = (
   idAttributes: Array<string>,
   anchors: NodeListOf<HTMLAnchorElement>
 ): entires => {
+  const resultArg1: Error = checkingIdAttribute(idAttributes);
+  const resultArg2: Error = checkingAnchors(anchors);
+
+  if (resultArg1.isError) throw new Error(resultArg1.errorTxt);
+  if (resultArg2.isError) throw new Error(resultArg2.errorTxt);
+
   function* generatorPhase(): Generator<void, Generator, any> {
     const phase: Generator = yield;
     while (true) {
@@ -42,7 +54,7 @@ const rikaaaPaging = (
         ready,
         isPushstate
       }: { ready: Ready; isPushstate: boolean } = yield takeReady(
-        callbacks.ready,
+        callbacks.hookReady,
         phase,
         anchors
       );
@@ -50,7 +62,7 @@ const rikaaaPaging = (
       yield delay(ready.afterDelay, phase, ready.onDelay);
 
       const start: Start = yield takeStart(
-        callbacks.start,
+        callbacks.hookStart,
         phase,
         ready,
         idAttributes
@@ -58,11 +70,11 @@ const rikaaaPaging = (
 
       yield delay(start.afterDelay, phase, start.onDelay);
 
-      const end: End = yield takeEnd(callbacks.end, phase, start);
+      const end: End = yield takeEnd(callbacks.hookEnd, phase, start);
 
       yield delay(end.afterDelay, phase, end.onDelay);
 
-      yield takeResult(callbacks.result, phase, end, isPushstate);
+      yield takeResult(callbacks.hookResult, phase, end, isPushstate);
     }
   }
 
@@ -85,34 +97,37 @@ const rikaaaPaging = (
     phase.next(phase);
   };
 
-  entires.ready = (callback: Function): entires => {
+  /**
+   * entiresの関数を初期化する
+   * @param key hookReady | hookStart | hookEnd | hookResult
+   * @param callback
+   */
+  const entiresInitialize = (
+    key: string,
+    callback: Function
+  ): Partial<Entires> => {
     if (typeof callback === "undefined")
-      callback = (data: Ready): Ready => data;
-    callbacks.ready = callback;
-    generatorInitialize();
-    return entires;
-  };
-  entires.start = (callback: Function): entires => {
-    if (typeof callback === "undefined")
-      callback = (data: Start): Start => data;
-    callbacks.start = callback;
-    generatorInitialize();
-    return entires;
-  };
-  entires.end = (callback: Function): entires => {
-    if (typeof callback === "undefined") callback = (data: End): End => data;
-    callbacks.end = callback;
-    generatorInitialize();
-    return entires;
-  };
-  entires.result = (callback: Function): void => {
-    if (typeof callback === "undefined") callback = (): void => {};
-    callbacks.result = callback;
-    generatorInitialize();
-  };
-  entires.curve = curve;
+      callback = (
+        data: Ready | Start | End | void
+      ): Ready | Start | End | void => data;
 
+    const result: Error = checkingEntiresFucArg(key, callback);
+    if (result.isError) throw new Error(result.errorTxt);
+
+    callbacks[key] = callback;
+    generatorInitialize();
+    if (key !== "hookResult") return entires;
+  };
+
+  ["hookReady", "hookStart", "hookEnd", "hookResult"].forEach(key => {
+    entires[key] = (callback: Function): entires =>
+      entiresInitialize(key, callback);
+  });
+
+  // ready start end resultをそれぞれ一回実行する。
   for (const value of Object.entries(entires)) value[1]();
+
+  entires.curve = curve;
 
   return entires;
 };

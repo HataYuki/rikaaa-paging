@@ -571,6 +571,57 @@ var curve = function (type, value) {
     }
 };
 
+var IDATTRIBUTE_ERROR_TEXT = 'The first argument of rikaaaPaging constructor is invalid. The argument type is array of id attribute string. For example "[#idAttribute1,#idAttribute2]".';
+var ANCHORS_ERROR_TEXT = "The second argument of rikaaaPaging constructor is invalid. The argument type is nodelist of HTML anchor elements.";
+var ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_1 = "'s argument is invalid. The argument is function with return own argument.";
+var ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_2 = "'s argument is invalid. The argument is function.";
+var notHaveError = { isError: false, errorTxt: "" };
+/**
+ * 引数が、#で始まる文字列の配列であるかを判定する。
+ * @param arg idAttributes
+ */
+var checkingIdAttribute = function (arg) {
+    var haveError = { isError: true, errorTxt: IDATTRIBUTE_ERROR_TEXT };
+    if (!Array.prototype.isPrototypeOf(arg))
+        return haveError;
+    if (arg.filter(function (item) { return typeof item !== "string"; }).length !== 0)
+        return haveError;
+    if (arg.filter(function (item) { return /^#/.test(item); }).length !== arg.length)
+        return haveError;
+    return notHaveError;
+};
+/**
+ * 引数が、アンカーエレメントのノードリストであるかを判定する。
+ * @param arg anchors
+ */
+var checkingAnchors = function (arg) {
+    var haveError = { isError: true, errorTxt: ANCHORS_ERROR_TEXT };
+    var elementArray = Array.from(arg);
+    if (!NodeList.prototype.isPrototypeOf(arg))
+        return haveError;
+    if (elementArray.filter(function (item) { return item.tagName !== "A"; }).length !== 0)
+        return haveError;
+    return notHaveError;
+};
+/**
+ * argが引数を持った関数であるかを判定する。hookResultの時は関数であるかのみ確認する。
+ * @param entiresKeyName entiresのkey
+ * @param arg entires.###()の引数
+ */
+var checkingEntiresFucArg = function (entiresKeyName, arg) {
+    var haveError = {
+        isError: true,
+        errorTxt: entiresKeyName + "()" + ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_1
+    };
+    if (entiresKeyName === "hookResult")
+        haveError.errorTxt = entiresKeyName + "()" + ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_2;
+    if (typeof arg !== "function")
+        return haveError;
+    if (!arg(true) && entiresKeyName !== "hookResult")
+        return haveError;
+    return notHaveError;
+};
+
 var entires = {};
 var callbacks = {};
 /**
@@ -580,6 +631,12 @@ var callbacks = {};
  */
 var rikaaaPaging = function (idAttributes, anchors) {
     var e_1, _a;
+    var resultArg1 = checkingIdAttribute(idAttributes);
+    var resultArg2 = checkingAnchors(anchors);
+    if (resultArg1.isError)
+        throw new Error(resultArg1.errorTxt);
+    if (resultArg2.isError)
+        throw new Error(resultArg2.errorTxt);
     function generatorPhase() {
         var phase, _a, ready, isPushstate, start, end;
         return __generator(this, function (_b) {
@@ -590,25 +647,25 @@ var rikaaaPaging = function (idAttributes, anchors) {
                     _b.label = 2;
                 case 2:
                     
-                    return [4 /*yield*/, takeReady(callbacks.ready, phase, anchors)];
+                    return [4 /*yield*/, takeReady(callbacks.hookReady, phase, anchors)];
                 case 3:
                     _a = _b.sent(), ready = _a.ready, isPushstate = _a.isPushstate;
                     return [4 /*yield*/, delay(ready.afterDelay, phase, ready.onDelay)];
                 case 4:
                     _b.sent();
-                    return [4 /*yield*/, takeStart(callbacks.start, phase, ready, idAttributes)];
+                    return [4 /*yield*/, takeStart(callbacks.hookStart, phase, ready, idAttributes)];
                 case 5:
                     start = _b.sent();
                     return [4 /*yield*/, delay(start.afterDelay, phase, start.onDelay)];
                 case 6:
                     _b.sent();
-                    return [4 /*yield*/, takeEnd(callbacks.end, phase, start)];
+                    return [4 /*yield*/, takeEnd(callbacks.hookEnd, phase, start)];
                 case 7:
                     end = _b.sent();
                     return [4 /*yield*/, delay(end.afterDelay, phase, end.onDelay)];
                 case 8:
                     _b.sent();
-                    return [4 /*yield*/, takeResult(callbacks.result, phase, end, isPushstate)];
+                    return [4 /*yield*/, takeResult(callbacks.hookResult, phase, end, isPushstate)];
                 case 9:
                     _b.sent();
                     return [3 /*break*/, 2];
@@ -629,35 +686,29 @@ var rikaaaPaging = function (idAttributes, anchors) {
         phase.next();
         phase.next(phase);
     };
-    entires.ready = function (callback) {
+    /**
+     * entiresの関数を初期化する
+     * @param key hookReady | hookStart | hookEnd | hookResult
+     * @param callback
+     */
+    var entiresInitialize = function (key, callback) {
         if (typeof callback === "undefined")
             callback = function (data) { return data; };
-        callbacks.ready = callback;
+        var result = checkingEntiresFucArg(key, callback);
+        if (result.isError)
+            throw new Error(result.errorTxt);
+        callbacks[key] = callback;
         generatorInitialize();
-        return entires;
+        if (key !== "hookResult")
+            return entires;
     };
-    entires.start = function (callback) {
-        if (typeof callback === "undefined")
-            callback = function (data) { return data; };
-        callbacks.start = callback;
-        generatorInitialize();
-        return entires;
-    };
-    entires.end = function (callback) {
-        if (typeof callback === "undefined")
-            callback = function (data) { return data; };
-        callbacks.end = callback;
-        generatorInitialize();
-        return entires;
-    };
-    entires.result = function (callback) {
-        if (typeof callback === "undefined")
-            callback = function () { };
-        callbacks.result = callback;
-        generatorInitialize();
-    };
-    entires.curve = curve;
+    ["hookReady", "hookStart", "hookEnd", "hookResult"].forEach(function (key) {
+        entires[key] = function (callback) {
+            return entiresInitialize(key, callback);
+        };
+    });
     try {
+        // ready start end resultをそれぞれ一回実行する。
         for (var _b = __values(Object.entries(entires)), _c = _b.next(); !_c.done; _c = _b.next()) {
             var value = _c.value;
             value[1]();
@@ -670,6 +721,7 @@ var rikaaaPaging = function (idAttributes, anchors) {
         }
         finally { if (e_1) throw e_1.error; }
     }
+    entires.curve = curve;
     return entires;
 };
 
