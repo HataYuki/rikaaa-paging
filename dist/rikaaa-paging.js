@@ -523,6 +523,25 @@ var delay = function (duration, g, callback) {
     });
 };
 
+var LINER = "LINEAR";
+var EASE_IN = "EASE_IN";
+var EASE_OUT = "EASE_OUT";
+var EASE_IN_OUT = "EASE_IN_OUT";
+var curve = function (type, value) {
+    switch (type) {
+        case LINER:
+            return value;
+        case EASE_IN:
+            return value * value;
+        case EASE_OUT:
+            return value * (2 - value);
+        case EASE_IN_OUT:
+            return value < 0.5 ? 2 * value * value : -1 + (4 - 2 * value) * value;
+        default:
+            return value;
+    }
+};
+
 var entires = {};
 var callbacks = {};
 /**
@@ -608,6 +627,7 @@ var rikaaaPaging = function (idAttribute, anchors) {
         callbacks.result = callback;
         generatorInitialize();
     };
+    entires.curve = curve;
     try {
         for (var _b = __values(Object.entries(entires)), _c = _b.next(); !_c.done; _c = _b.next()) {
             var value = _c.value;
