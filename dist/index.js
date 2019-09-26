@@ -13,7 +13,15 @@ const ready = fn => {
 };
 
 ready(() => {
-  self.rikaaapaging("test", document.querySelectorAll("a"));
+  const entires = self.rikaaapaging("test", document.querySelectorAll("a"));
+  entires.ready(data => {
+    // data.afterDelay = 1000;
+    data.onDelay = val => {
+      console.log(val);
+    };
+    return data;
+  });
+
   // entires.result(data => {
   //   console.log(data.oldUrl);
   //   console.log(data.newUrl);

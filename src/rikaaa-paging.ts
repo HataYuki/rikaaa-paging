@@ -4,6 +4,7 @@ import { takeEnd, End } from "./takeEnd";
 import { takeResult } from "./takeResult";
 import { replaceState } from "./history";
 import delay from "./delay";
+import curve from "./curve";
 
 import "./polyfill/Object.entries";
 
@@ -12,6 +13,7 @@ interface Entires extends Record<string, Function> {
   start: Function;
   end: Function;
   result: Function;
+  curve: Function;
 }
 type entires = Partial<Entires>;
 const entires: entires = {};
@@ -108,6 +110,7 @@ const rikaaaPaging = (
     callbacks.result = callback;
     generatorInitialize();
   };
+  entires.curve = curve;
 
   for (const value of Object.entries(entires)) value[1]();
 

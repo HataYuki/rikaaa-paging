@@ -505,7 +505,7 @@ var delayMain = function (duration, onDelay, End) {
             startTime = timestamp;
         var progressTime = timestamp - startTime;
         if (progressTime <= duration)
-            req = requestAnimationFrame(step), onDelay(progressTime / duration);
+            req = requestAnimationFrame(step), onDelay(duration === 0 ? 0 : progressTime / duration);
         else
             cancelAnimationFrame(req), onDelay(1), End();
     };
@@ -518,19 +518,28 @@ var delayMain = function (duration, onDelay, End) {
  * @param callback delayが発動するあいだ、発火し続ける関数。引数に0.-1.のパラメーターを返す
  */
 var delay = function (duration, g, callback) {
-    // let startTime = null,
-    //   req = null;
-    // const step = (timestamp): void => {
-    //   if (!startTime) startTime = timestamp;
-    //   const progressTime = timestamp - startTime;
-    //   if (progressTime <= duration)
-    //     (req = requestAnimationFrame(step)), callback(progressTime / duration);
-    //   else cancelAnimationFrame(req), g.next();
-    // };
-    // req = requestAnimationFrame(step);
     delayMain(duration, callback, function () {
         g.next();
     });
+};
+
+var LINER = "LINEAR";
+var EASE_IN = "EASE_IN";
+var EASE_OUT = "EASE_OUT";
+var EASE_IN_OUT = "EASE_IN_OUT";
+var curve = function (type, value) {
+    switch (type) {
+        case LINER:
+            return value;
+        case EASE_IN:
+            return value * value;
+        case EASE_OUT:
+            return value * (2 - value);
+        case EASE_IN_OUT:
+            return value < 0.5 ? 2 * value * value : -1 + (4 - 2 * value) * value;
+        default:
+            return value;
+    }
 };
 
 var entires = {};
@@ -618,6 +627,7 @@ var rikaaaPaging = function (idAttribute, anchors) {
         callbacks.result = callback;
         generatorInitialize();
     };
+    entires.curve = curve;
     try {
         for (var _b = __values(Object.entries(entires)), _c = _b.next(); !_c.done; _c = _b.next()) {
             var value = _c.value;
