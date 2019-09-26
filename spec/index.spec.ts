@@ -1,6 +1,6 @@
 import "./handleClick.spec";
 import "./elementWrap.spec";
-// import "./delay.spec";
+import "./delay.spec";
 import "./getMeta.spec";
 import "./dataStringify.spec";
 import "./request.spec";
