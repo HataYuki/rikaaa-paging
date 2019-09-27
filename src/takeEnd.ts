@@ -30,11 +30,13 @@ export interface End
  * @param callback endCallback
  * @param g generator
  * @param start takeGetHTMLの戻り値
+ * @param initializer Generatorを初期化する関数。
  */
 export const takeEnd = (
   callback: Function,
   g: Generator,
-  start: Start
+  start: Start,
+  initializer: Function
 ): void => {
   const callbackArg: Partial<End> = {};
   callbackArg.previousTargets = {};
@@ -54,11 +56,6 @@ export const takeEnd = (
       wraped !== null ? elementUnwrap(wraped) : null;
   });
 
-  // const previousTarget = document.getElementById(start.idAttribute);
-  // const wraped = elementWrap(previousTarget);
-  // wraped.removeChild(previousTarget);
-  // wraped.appendChild(start.target);
-
   // change title
   document.title = start.title;
   // change meta
@@ -71,8 +68,6 @@ export const takeEnd = (
     start.description
   );
 
-  // callbackArg.previousTarget = previousTarget;
-  // callbackArg.updatedTarget = elementUnwrap(wraped);
   callbackArg.idAttributes = start.idAttributes;
   callbackArg.afterDelay = 0;
   callbackArg.newUrl = start.response.url;
@@ -81,6 +76,7 @@ export const takeEnd = (
   callbackArg.afterDelay = 0;
   callbackArg.onDelay = (): void => {};
 
-  // Promise.resolve().then(() => g.next(callback(callbackArg)));
-  setTimeout(() => g.next(callback(callbackArg)), 0);
+  const config = callback(callbackArg);
+  if (config) setTimeout(() => g.next(callback(callbackArg)), 0);
+  else setTimeout(() => initializer(), 0);
 };

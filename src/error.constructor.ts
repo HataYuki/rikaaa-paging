@@ -6,7 +6,7 @@ export const IDATTRIBUTE_ERROR_TEXT =
 export const ANCHORS_ERROR_TEXT =
   "The second argument of rikaaaPaging constructor is invalid. The argument type is nodelist of HTML anchor elements.";
 export const ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_1 =
-  "'s argument is invalid. The argument is function with return own argument.";
+  "'s argument is invalid. The argument is function with return own argument or 'false'.";
 export const ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_2 =
   "'s argument is invalid. The argument is function.";
 
