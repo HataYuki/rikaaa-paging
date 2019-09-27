@@ -19,7 +19,9 @@ export interface Start
   > {
   ready: Ready;
   idAttributes: Array<string>;
-  targets: Record<string, Element | null> | null;
+  // targets: Record<string, Element | null> | null;
+  currentTargets: Record<string, Element | null> | null;
+  nextTargets: Record<string, Element | null> | null;
   // classLists: Record<string, Element | null> | null;
   title: string | null;
   keywords: Array<string> | null;
@@ -65,10 +67,17 @@ export const takeStart = (
     // callbackArg.targets = isResponseOk
     //   ? response.html.querySelectorAll(`#${idAttribute}`)
     //   : null;
-    callbackArg.targets = isResponseOk
+    callbackArg.nextTargets = isResponseOk
       ? idAttributes.reduce((a, c) => {
           const Obj = {};
           Obj[c] = response.html.querySelector(c);
+          return { ...a, ...Obj };
+        }, {})
+      : null;
+    callbackArg.currentTargets = isResponseOk
+      ? idAttributes.reduce((a, c) => {
+          const Obj = {};
+          Obj[c] = document.querySelector(c);
           return { ...a, ...Obj };
         }, {})
       : null;

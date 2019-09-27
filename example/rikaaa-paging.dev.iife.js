@@ -409,10 +409,17 @@ var takeStart = function (callback, g, ready, idAttributes) {
         // callbackArg.targets = isResponseOk
         //   ? response.html.querySelectorAll(`#${idAttribute}`)
         //   : null;
-        callbackArg.targets = isResponseOk
+        callbackArg.nextTargets = isResponseOk
             ? idAttributes.reduce(function (a, c) {
                 var Obj = {};
                 Obj[c] = response.html.querySelector(c);
+                return __assign(__assign({}, a), Obj);
+            }, {})
+            : null;
+        callbackArg.currentTargets = isResponseOk
+            ? idAttributes.reduce(function (a, c) {
+                var Obj = {};
+                Obj[c] = document.querySelector(c);
                 return __assign(__assign({}, a), Obj);
             }, {})
             : null;
