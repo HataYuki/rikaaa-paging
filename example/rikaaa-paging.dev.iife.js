@@ -131,7 +131,10 @@ var handleClick = function (nodeList, callback) {
         nodeList[i].onclick = onClickEv;
 };
 
-var _this = undefined;
+/**
+ * rollupでエラーが出るので、ここはアロー関数をやめる。
+ * https://github.com/rollup/rollup/issues/1518
+ */
 var dataStringify = function (data) {
     var e_1, _a;
     var newData = {};
@@ -163,7 +166,7 @@ var dataParse = function (data) {
             var _d = __read(_c.value, 2), key = _d[0], value = _d[1];
             var _value = null;
             if (typeof value === "string" && value.match(/(^function|=>)/)) {
-                _value = Function.call(_this, "return " + value)();
+                _value = Function.call(this, "return " + value)();
             }
             else {
                 _value = value;
