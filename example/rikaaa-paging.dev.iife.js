@@ -218,8 +218,9 @@ var handlePopstate = function (callback) {
  * @param callback readyCallback
  * @param g generator
  * @param anchors nodeList of anchors
+ *  @param initializer Generatorを初期化する関数。
  */
-var takeReady = function (callback, g, anchors) {
+var takeReady = function (callback, g, anchors, initalizer) {
     var currentUrl = location.href;
     var callbackArg = {};
     var event = function (event) {
@@ -231,10 +232,14 @@ var takeReady = function (callback, g, anchors) {
         callbackArg.afterDelay = isMouseEvent ? 0 : event.afterDelay;
         callbackArg.onProgress = isMouseEvent ? function () { } : event.onProgress;
         callbackArg.onDelay = isMouseEvent ? function () { } : event.onDelay;
-        g.next({
-            ready: callback(callbackArg),
-            isPushstate: isMouseEvent && different ? true : false
-        });
+        var config = callback(callbackArg);
+        if (config)
+            g.next({
+                ready: config,
+                isPushstate: isMouseEvent && different ? true : false
+            });
+        else
+            initalizer();
     };
     handleClick(anchors, event);
     handlePopstate(event);
@@ -295,8 +300,9 @@ var getMeta = function (name, document) {
  * @param g generator
  * @param ready takeAnchorsClickの戻り値
  * @param idAttributes 更新対象のnodeのID
+ * @param initializer Generatorを初期化する関数。
  */
-var takeStart = function (callback, g, ready, idAttributes) {
+var takeStart = function (callback, g, ready, idAttributes, initializer) {
     request(ready.href, ready.onProgress, function (response) {
         var callbackArg = {};
         var isResponseOk = response.statusText === "OK" ? true : false;
@@ -342,7 +348,11 @@ var takeStart = function (callback, g, ready, idAttributes) {
             : null;
         callbackArg.afterDelay = 0;
         callbackArg.onDelay = function () { };
-        g.next(callback(callbackArg));
+        var config = callback(callbackArg);
+        if (config)
+            g.next(config);
+        else
+            initializer();
     });
 };
 
@@ -373,8 +383,9 @@ var elementUnwrap = function (element) {
  * @param callback endCallback
  * @param g generator
  * @param start takeGetHTMLの戻り値
+ * @param initializer Generatorを初期化する関数。
  */
-var takeEnd = function (callback, g, start) {
+var takeEnd = function (callback, g, start, initializer) {
     var callbackArg = {};
     callbackArg.previousTargets = {};
     callbackArg.updatedTargets = {};
@@ -399,7 +410,11 @@ var takeEnd = function (callback, g, start) {
     callbackArg.start = start;
     callbackArg.afterDelay = 0;
     callbackArg.onDelay = function () { };
-    setTimeout(function () { return g.next(callback(callbackArg)); }, 0);
+    var config = callback(callbackArg);
+    if (config)
+        setTimeout(function () { return g.next(callback(callbackArg)); }, 0);
+    else
+        setTimeout(function () { return initializer(); }, 0);
 };
 
 /**
@@ -488,7 +503,7 @@ var map = function (value, istart, istop, ostart, ostop) { return ostart + (osto
 
 var IDATTRIBUTE_ERROR_TEXT = 'The first argument of rikaaaPaging constructor is invalid. The argument type is array of id attribute string. For example "[#idAttribute1,#idAttribute2]".';
 var ANCHORS_ERROR_TEXT = "The second argument of rikaaaPaging constructor is invalid. The argument type is nodelist of HTML anchor elements.";
-var ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_1 = "'s argument is invalid. The argument is function with return own argument.";
+var ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_1 = "'s argument is invalid. The argument is function with return own argument or 'false'.";
 var ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_2 = "'s argument is invalid. The argument is function.";
 var notHaveError = { isError: false, errorTxt: "" };
 /**
@@ -653,36 +668,36 @@ var rikaaaPaging = function (idAttributes, anchors) {
     if (resultArg2.isError)
         throw new Error(resultArg2.errorTxt);
     function generatorPhase() {
-        var phase, _a, ready, isPushstate, start, end;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var _a, phase, generatorInitialize, _b, ready, isPushstate, start, end;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0: return [4 /*yield*/];
                 case 1:
-                    phase = _b.sent();
-                    _b.label = 2;
+                    _a = _c.sent(), phase = _a.phase, generatorInitialize = _a.generatorInitialize;
+                    _c.label = 2;
                 case 2:
                     
-                    return [4 /*yield*/, takeReady(callbacks.hookReady, phase, anchors)];
+                    return [4 /*yield*/, takeReady(callbacks.hookReady, phase, anchors, generatorInitialize)];
                 case 3:
-                    _a = _b.sent(), ready = _a.ready, isPushstate = _a.isPushstate;
+                    _b = _c.sent(), ready = _b.ready, isPushstate = _b.isPushstate;
                     return [4 /*yield*/, delay(ready.afterDelay, phase, ready.onDelay)];
                 case 4:
-                    _b.sent();
-                    return [4 /*yield*/, takeStart(callbacks.hookStart, phase, ready, idAttributes)];
+                    _c.sent();
+                    return [4 /*yield*/, takeStart(callbacks.hookStart, phase, ready, idAttributes, generatorInitialize)];
                 case 5:
-                    start = _b.sent();
+                    start = _c.sent();
                     return [4 /*yield*/, delay(start.afterDelay, phase, start.onDelay)];
                 case 6:
-                    _b.sent();
-                    return [4 /*yield*/, takeEnd(callbacks.hookEnd, phase, start)];
+                    _c.sent();
+                    return [4 /*yield*/, takeEnd(callbacks.hookEnd, phase, start, generatorInitialize)];
                 case 7:
-                    end = _b.sent();
+                    end = _c.sent();
                     return [4 /*yield*/, delay(end.afterDelay, phase, end.onDelay)];
                 case 8:
-                    _b.sent();
+                    _c.sent();
                     return [4 /*yield*/, takeResult(callbacks.hookResult, phase, end, isPushstate)];
                 case 9:
-                    _b.sent();
+                    _c.sent();
                     return [3 /*break*/, 2];
                 case 10: return [2 /*return*/];
             }
@@ -692,7 +707,7 @@ var rikaaaPaging = function (idAttributes, anchors) {
     var generatorInitialize = function () {
         var phase = generatorPhase();
         phase.next();
-        phase.next(phase);
+        phase.next({ phase: phase, generatorInitialize: generatorInitialize });
     };
     /**
      * entiresの関数を初期化する
