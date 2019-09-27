@@ -43,6 +43,22 @@ const rikaaaPaging = (
   idAttributes: Array<string>,
   anchors: NodeListOf<HTMLAnchorElement>
 ): entires => {
+  self.onpageshow = (event): void => {
+    if (event.persisted) self.location.reload();
+  };
+
+  replaceState(
+    {
+      currentUrl: null,
+      href: location.href,
+      afterDelay: 0,
+      onProgress: () => {},
+      onDelay: () => {}
+    },
+    document.title,
+    self.location.href
+  );
+
   const resultArg1: Error = checkingIdAttribute(idAttributes);
   const resultArg2: Error = checkingAnchors(anchors);
 
@@ -79,18 +95,6 @@ const rikaaaPaging = (
       yield takeResult(callbacks.hookResult, phase, end, isPushstate);
     }
   }
-
-  replaceState(
-    {
-      currentUrl: location.href,
-      href: location.href,
-      afterDelay: 0,
-      onProgress: () => {},
-      onDelay: () => {}
-    },
-    document.title,
-    self.location.href
-  );
 
   // let phase: Generator;
   const generatorInitialize = (): void => {
