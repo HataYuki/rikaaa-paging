@@ -1,6 +1,6 @@
 /**
  * @license
- * Generated : 2019-09-26
+ * Generated : 2019-09-27
  * Version : 0.5.0
  * Author : rikaaa.org | Yuki Hata
  * Url : http://rikaaa.org
@@ -239,14 +239,16 @@ var takeReady = function (callback, g, anchors) {
     var callbackArg = {};
     var event = function (event) {
         var isMouseEvent = event.type === "click" || event.type ? true : false;
+        var href = isMouseEvent ? event.target.href : event.href;
+        var different = location.href !== href ? true : false;
         callbackArg.currentUrl = currentUrl;
-        callbackArg.href = isMouseEvent ? event.target.href : event.href;
+        callbackArg.href = href;
         callbackArg.afterDelay = isMouseEvent ? 0 : event.afterDelay;
         callbackArg.onProgress = isMouseEvent ? function () { } : event.onProgress;
         callbackArg.onDelay = isMouseEvent ? function () { } : event.onDelay;
         g.next({
             ready: callback(callbackArg),
-            isPushstate: isMouseEvent ? true : false
+            isPushstate: isMouseEvent && different ? true : false
         });
     };
     handleClick(anchors, event);
@@ -386,14 +388,16 @@ var getMeta = function (name, document) {
  * @param callback startCallback
  * @param g generator
  * @param ready takeAnchorsClickの戻り値
- * @param idAttribute 更新対象のnodeのID
+ * @param idAttributes 更新対象のnodeのID
  */
-var takeStart = function (callback, g, ready, idAttribute) {
+var takeStart = function (callback, g, ready, idAttributes) {
     request(ready.href, ready.onProgress, function (response) {
         var callbackArg = {};
         var isResponseOk = response.statusText === "OK" ? true : false;
-        if (!isResponseOk)
+        if (!isResponseOk) {
             self.location.href = ready.href;
+            return false;
+        }
         var keywords = function () {
             if (isResponseOk && response.html)
                 return getMeta("keywords", response.html)[0]
@@ -409,12 +413,20 @@ var takeStart = function (callback, g, ready, idAttribute) {
                 return null;
         };
         callbackArg.ready = ready;
-        callbackArg.idAttribute = idAttribute;
-        callbackArg.target = isResponseOk
-            ? response.html.querySelector("#" + idAttribute)
+        callbackArg.idAttributes = idAttributes;
+        callbackArg.nextTargets = isResponseOk
+            ? idAttributes.reduce(function (a, c) {
+                var Obj = {};
+                Obj[c] = response.html.querySelector(c);
+                return __assign(__assign({}, a), Obj);
+            }, {})
             : null;
-        callbackArg.classList = isResponseOk
-            ? Array.from(response.html.querySelector("#" + idAttribute).classList)
+        callbackArg.currentTargets = isResponseOk
+            ? idAttributes.reduce(function (a, c) {
+                var Obj = {};
+                Obj[c] = document.querySelector(c);
+                return __assign(__assign({}, a), Obj);
+            }, {})
             : null;
         callbackArg.description = description();
         callbackArg.keywords = keywords();
@@ -458,24 +470,30 @@ var elementUnwrap = function (element) {
  */
 var takeEnd = function (callback, g, start) {
     var callbackArg = {};
-    var previousTarget = document.getElementById(start.idAttribute);
-    var wraped = elementWrap(previousTarget);
-    wraped.removeChild(previousTarget);
-    wraped.appendChild(start.target);
+    callbackArg.previousTargets = {};
+    callbackArg.updatedTargets = {};
+    start.idAttributes.forEach(function (id) {
+        var previousTarget = document.querySelector(id);
+        callbackArg.previousTargets[id] = previousTarget;
+        var wraped = previousTarget !== null ? elementWrap(previousTarget) : null;
+        if (wraped !== null && start.nextTargets[id] !== null)
+            wraped.removeChild(previousTarget),
+                wraped.appendChild(start.nextTargets[id]);
+        callbackArg.updatedTargets[id] =
+            wraped !== null ? elementUnwrap(wraped) : null;
+    });
     // change title
     document.title = start.title;
     // change meta
     getMeta("keywords", document)[0].setAttribute("content", start.keywords.join(","));
     getMeta("description", document)[0].setAttribute("content", start.description);
-    callbackArg.previousTarget = previousTarget;
-    callbackArg.updatedTarget = elementUnwrap(wraped);
+    callbackArg.idAttributes = start.idAttributes;
     callbackArg.afterDelay = 0;
     callbackArg.newUrl = start.response.url;
     callbackArg.ready = start.ready;
     callbackArg.start = start;
     callbackArg.afterDelay = 0;
     callbackArg.onDelay = function () { };
-    // Promise.resolve().then(() => g.next(callback(callbackArg)));
     setTimeout(function () { return g.next(callback(callbackArg)); }, 0);
 };
 
@@ -494,7 +512,6 @@ var takeResult = function (callback, g, end, isPushstate) {
     });
     if (isPushstate)
         pushState(end.ready, end.start.title, end.newUrl);
-    // Promise.resolve().then(() => g.next());
     setTimeout(function () { return g.next(); }, 0);
 };
 
@@ -505,16 +522,21 @@ var takeResult = function (callback, g, end, isPushstate) {
  * @param End ディレイ終了後に発火させる関数。callbackの引数が1になった時と同時。
  */
 var delayMain = function (duration, onDelay, End) {
-    var startTime = null, req = null;
+    var startTime = performance.now();
+    var req = null, progress, _progress;
     var step = function (timestamp) {
-        if (!startTime)
-            startTime = timestamp;
-        var progressTime = timestamp - startTime;
-        if (progressTime <= duration)
-            (req = requestAnimationFrame(step)),
-                onDelay(duration === 0 ? 0 : progressTime / duration);
-        else
-            cancelAnimationFrame(req), onDelay(1), End();
+        req = requestAnimationFrame(step);
+        if (duration !== 0) {
+            progress = (timestamp - startTime) / duration;
+            _progress = progress >= 1 ? 1 : progress;
+        }
+        else {
+            progress = 1;
+            _progress = 1;
+        }
+        onDelay(_progress);
+        if (_progress >= 1)
+            cancelAnimationFrame(req), End();
     };
     req = requestAnimationFrame(step);
 };
@@ -549,15 +571,93 @@ var curve = function (type, value) {
     }
 };
 
+/**
+ * 特定の範囲で変化する値を特定の範囲の値に変更する。
+ * @param value 変更したい値
+ * @param istart 変更したい値の最小値
+ * @param istop 変更したい値の最大値
+ * @param ostart 変更後の最小値
+ * @param ostop 変更後の最大値
+ */
+var map = function (value, istart, istop, ostart, ostop) { return ostart + (ostop - ostart) * ((value - istart) / (istop - istart)); };
+
+var IDATTRIBUTE_ERROR_TEXT = 'The first argument of rikaaaPaging constructor is invalid. The argument type is array of id attribute string. For example "[#idAttribute1,#idAttribute2]".';
+var ANCHORS_ERROR_TEXT = "The second argument of rikaaaPaging constructor is invalid. The argument type is nodelist of HTML anchor elements.";
+var ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_1 = "'s argument is invalid. The argument is function with return own argument.";
+var ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_2 = "'s argument is invalid. The argument is function.";
+var notHaveError = { isError: false, errorTxt: "" };
+/**
+ * 引数が、#で始まる文字列の配列であるかを判定する。
+ * @param arg idAttributes
+ */
+var checkingIdAttribute = function (arg) {
+    var haveError = { isError: true, errorTxt: IDATTRIBUTE_ERROR_TEXT };
+    if (!Array.prototype.isPrototypeOf(arg))
+        return haveError;
+    if (arg.filter(function (item) { return typeof item !== "string"; }).length !== 0)
+        return haveError;
+    if (arg.filter(function (item) { return /^#/.test(item); }).length !== arg.length)
+        return haveError;
+    return notHaveError;
+};
+/**
+ * 引数が、アンカーエレメントのノードリストであるかを判定する。
+ * @param arg anchors
+ */
+var checkingAnchors = function (arg) {
+    var haveError = { isError: true, errorTxt: ANCHORS_ERROR_TEXT };
+    var elementArray = Array.from(arg);
+    if (!NodeList.prototype.isPrototypeOf(arg))
+        return haveError;
+    if (elementArray.filter(function (item) { return item.tagName !== "A"; }).length !== 0)
+        return haveError;
+    return notHaveError;
+};
+/**
+ * argが引数を持った関数であるかを判定する。hookResultの時は関数であるかのみ確認する。
+ * @param entiresKeyName entiresのkey
+ * @param arg entires.###()の引数
+ */
+var checkingEntiresFucArg = function (entiresKeyName, arg) {
+    var haveError = {
+        isError: true,
+        errorTxt: entiresKeyName + "()" + ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_1
+    };
+    if (entiresKeyName === "hookResult")
+        haveError.errorTxt = entiresKeyName + "()" + ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_2;
+    if (typeof arg !== "function")
+        return haveError;
+    if (!/return/.test(arg.toString()) && entiresKeyName !== "hookResult")
+        return haveError;
+    return notHaveError;
+};
+
 var entires = {};
 var callbacks = {};
 /**
  * rikaaaPaging constructor
- * @param idAttribute id attribute of target tag
- * @param anchors nodelist of a tag
+ * @param idAttributes array of id attribute. The id attribute is update target.
+ * @param anchors nodelist of HTML anchor elements.
  */
-var rikaaaPaging = function (idAttribute, anchors) {
+var rikaaaPaging = function (idAttributes, anchors) {
     var e_1, _a;
+    self.onpageshow = function (event) {
+        if (event.persisted)
+            self.location.reload();
+    };
+    replaceState({
+        currentUrl: null,
+        href: location.href,
+        afterDelay: 0,
+        onProgress: function () { },
+        onDelay: function () { }
+    }, document.title, self.location.href);
+    var resultArg1 = checkingIdAttribute(idAttributes);
+    var resultArg2 = checkingAnchors(anchors);
+    if (resultArg1.isError)
+        throw new Error(resultArg1.errorTxt);
+    if (resultArg2.isError)
+        throw new Error(resultArg2.errorTxt);
     function generatorPhase() {
         var phase, _a, ready, isPushstate, start, end;
         return __generator(this, function (_b) {
@@ -567,25 +667,25 @@ var rikaaaPaging = function (idAttribute, anchors) {
                     phase = _b.sent();
                     _b.label = 2;
                 case 2:
-                    return [4 /*yield*/, takeReady(callbacks.ready, phase, anchors)];
+                    return [4 /*yield*/, takeReady(callbacks.hookReady, phase, anchors)];
                 case 3:
                     _a = _b.sent(), ready = _a.ready, isPushstate = _a.isPushstate;
                     return [4 /*yield*/, delay(ready.afterDelay, phase, ready.onDelay)];
                 case 4:
                     _b.sent();
-                    return [4 /*yield*/, takeStart(callbacks.start, phase, ready, idAttribute)];
+                    return [4 /*yield*/, takeStart(callbacks.hookStart, phase, ready, idAttributes)];
                 case 5:
                     start = _b.sent();
                     return [4 /*yield*/, delay(start.afterDelay, phase, start.onDelay)];
                 case 6:
                     _b.sent();
-                    return [4 /*yield*/, takeEnd(callbacks.end, phase, start)];
+                    return [4 /*yield*/, takeEnd(callbacks.hookEnd, phase, start)];
                 case 7:
                     end = _b.sent();
                     return [4 /*yield*/, delay(end.afterDelay, phase, end.onDelay)];
                 case 8:
                     _b.sent();
-                    return [4 /*yield*/, takeResult(callbacks.result, phase, end, isPushstate)];
+                    return [4 /*yield*/, takeResult(callbacks.hookResult, phase, end, isPushstate)];
                 case 9:
                     _b.sent();
                     return [3 /*break*/, 2];
@@ -593,48 +693,35 @@ var rikaaaPaging = function (idAttribute, anchors) {
             }
         });
     }
-    replaceState({
-        currentUrl: location.href,
-        href: location.href,
-        afterDelay: 0,
-        onProgress: function () { },
-        onDelay: function () { }
-    }, document.title, self.location.href);
     // let phase: Generator;
     var generatorInitialize = function () {
         var phase = generatorPhase();
         phase.next();
         phase.next(phase);
     };
-    entires.ready = function (callback) {
+    /**
+     * entiresの関数を初期化する
+     * @param key hookReady | hookStart | hookEnd | hookResult
+     * @param callback
+     */
+    var entiresInitialize = function (key, callback) {
         if (typeof callback === "undefined")
             callback = function (data) { return data; };
-        callbacks.ready = callback;
+        var result = checkingEntiresFucArg(key, callback);
+        if (result.isError)
+            throw new Error(result.errorTxt);
+        callbacks[key] = callback;
         generatorInitialize();
-        return entires;
+        if (key !== "hookResult")
+            return entires;
     };
-    entires.start = function (callback) {
-        if (typeof callback === "undefined")
-            callback = function (data) { return data; };
-        callbacks.start = callback;
-        generatorInitialize();
-        return entires;
-    };
-    entires.end = function (callback) {
-        if (typeof callback === "undefined")
-            callback = function (data) { return data; };
-        callbacks.end = callback;
-        generatorInitialize();
-        return entires;
-    };
-    entires.result = function (callback) {
-        if (typeof callback === "undefined")
-            callback = function () { };
-        callbacks.result = callback;
-        generatorInitialize();
-    };
-    entires.curve = curve;
+    ["hookReady", "hookStart", "hookEnd", "hookResult"].forEach(function (key) {
+        entires[key] = function (callback) {
+            return entiresInitialize(key, callback);
+        };
+    });
     try {
+        // ready start end resultをそれぞれ一回実行する。
         for (var _b = __values(Object.entries(entires)), _c = _b.next(); !_c.done; _c = _b.next()) {
             var value = _c.value;
             value[1]();
@@ -647,6 +734,8 @@ var rikaaaPaging = function (idAttribute, anchors) {
         }
         finally { if (e_1) throw e_1.error; }
     }
+    entires.curve = curve;
+    entires.map = map;
     return entires;
 };
 
