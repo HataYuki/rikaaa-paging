@@ -1,5 +1,13 @@
 import { Ready } from "./takeReady";
-export const dataStringify = (data: Ready): Record<string, string | number> => {
+
+/**
+ * rollupでエラーが出るので、ここはアロー関数をやめる。
+ * https://github.com/rollup/rollup/issues/1518
+ */
+
+export const dataStringify = function(
+  data: Ready
+): Record<string, string | number> {
   const newData = {};
 
   for (const [key, value] of Object.entries(data)) {
@@ -12,9 +20,9 @@ export const dataStringify = (data: Ready): Record<string, string | number> => {
   return newData;
 };
 
-export const dataParse = (
+export const dataParse = function(
   data: Record<string, number | string>
-): Partial<Ready> => {
+): Partial<Ready> {
   const newData = {};
   for (const [key, value] of Object.entries(data)) {
     let _value = null;
