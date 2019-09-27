@@ -409,25 +409,32 @@ var takeStart = function (callback, g, ready, idAttributes) {
         // callbackArg.targets = isResponseOk
         //   ? response.html.querySelectorAll(`#${idAttribute}`)
         //   : null;
-        callbackArg.targets = isResponseOk
+        callbackArg.nextTargets = isResponseOk
             ? idAttributes.reduce(function (a, c) {
                 var Obj = {};
                 Obj[c] = response.html.querySelector(c);
                 return __assign(__assign({}, a), Obj);
             }, {})
             : null;
-        // callbackArg.classList = isResponseOk
-        //   ? Array.from(response.html.querySelector(`#${idAttribute}`).classList)
-        //   : null;
-        callbackArg.classLists = isResponseOk
+        callbackArg.currentTargets = isResponseOk
             ? idAttributes.reduce(function (a, c) {
                 var Obj = {};
-                var targetElement = response.html.querySelector(c);
-                Obj[c] = targetElement !== null ? targetElement.classList : null;
-                // return Object.assign(a, Obj);
+                Obj[c] = document.querySelector(c);
                 return __assign(__assign({}, a), Obj);
             }, {})
             : null;
+        // callbackArg.classList = isResponseOk
+        //   ? Array.from(response.html.querySelector(`#${idAttribute}`).classList)
+        //   : null;
+        // callbackArg.classLists = isResponseOk
+        //   ? idAttributes.reduce((a, c) => {
+        //       const Obj = {};
+        //       const targetElement = response.html.querySelector(c);
+        //       Obj[c] = targetElement !== null ? targetElement.classList : null;
+        //       // return Object.assign(a, Obj);
+        //       return { ...a, ...Obj };
+        //     }, {})
+        //   : null;
         callbackArg.description = description();
         callbackArg.keywords = keywords();
         callbackArg.response = response;
@@ -476,8 +483,8 @@ var takeEnd = function (callback, g, start) {
         var previousTarget = document.querySelector(id);
         callbackArg.previousTargets[id] = previousTarget;
         var wraped = previousTarget !== null ? elementWrap(previousTarget) : null;
-        if (wraped !== null && start.targets[id] !== null)
-            wraped.removeChild(previousTarget), wraped.appendChild(start.targets[id]);
+        if (wraped !== null && start.nextTargets[id] !== null)
+            wraped.removeChild(previousTarget), wraped.appendChild(start.nextTargets[id]);
         callbackArg.updatedTargets[id] =
             wraped !== null ? elementUnwrap(wraped) : null;
     });

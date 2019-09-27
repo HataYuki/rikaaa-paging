@@ -44,8 +44,9 @@ export const takeEnd = (
 
     const wraped = previousTarget !== null ? elementWrap(previousTarget) : null;
 
-    if (wraped !== null && start.targets[id] !== null)
-      wraped.removeChild(previousTarget), wraped.appendChild(start.targets[id]);
+    if (wraped !== null && start.nextTargets[id] !== null)
+      wraped.removeChild(previousTarget),
+        wraped.appendChild(start.nextTargets[id]);
 
     callbackArg.updatedTargets[id] =
       wraped !== null ? elementUnwrap(wraped) : null;
