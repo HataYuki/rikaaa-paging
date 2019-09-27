@@ -5,7 +5,8 @@ window.onload = function() {
   );
 
   var each = 200;
-  var duration = each * 3;
+  var length = 3;
+  var duration = each * length;
 
   paging.hookStart(function(data) {
     var ids = data.idAttributes;
@@ -37,26 +38,37 @@ window.onload = function() {
     return data;
   });
   paging.hookEnd(function(data) {
+    var ids = data.idAttributes;
     data.afterDelay = duration;
 
     data.onDelay = function(ratio) {
       var step = Math.floor((ratio * duration) / each);
+      var opacity = paging.map(
+        ratio * duration,
+        each * step,
+        each * (step + 1),
+        0,
+        1
+      );
 
       switch (step) {
         case 0:
-          data.updatedTargets[ids[step]].style.transition =
-            "opacity 200ms ease-in-out";
-          data.updatedTargets[ids[step]].style.opacity = 1;
+          data.updatedTargets[ids[step]].style.opacity = paging.curve(
+            "LINEAR",
+            opacity
+          );
           break;
         case 1:
-          data.updatedTargets[ids[step]].style.transition =
-            "opacity 200ms ease-in-out";
-          data.updatedTargets[ids[step]].style.opacity = 1;
+          data.updatedTargets[ids[step]].style.opacity = paging.curve(
+            "EASE_IN",
+            opacity
+          );
           break;
         case 2:
-          data.updatedTargets[ids[step]].style.transition =
-            "opacity 200ms ease-in-out";
-          data.updatedTargets[ids[step]].style.opacity = 1;
+          data.updatedTargets[ids[step]].style.opacity = paging.curve(
+            "EASE_OUT",
+            opacity
+          );
           break;
       }
     };
