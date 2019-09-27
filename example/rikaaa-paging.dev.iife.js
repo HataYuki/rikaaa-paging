@@ -585,6 +585,16 @@ var curve = function (type, value) {
     }
 };
 
+/**
+ * 特定の範囲で変化する値を特定の範囲の値に変更する。
+ * @param value 変更したい値
+ * @param istart 変更したい値の最小値
+ * @param istop 変更したい値の最大値
+ * @param ostart 変更後の最小値
+ * @param ostop 変更後の最大値
+ */
+var map = function (value, istart, istop, ostart, ostop) { return ostart + (ostop - ostart) * ((value - istart) / (istop - istart)); };
+
 var IDATTRIBUTE_ERROR_TEXT = 'The first argument of rikaaaPaging constructor is invalid. The argument type is array of id attribute string. For example "[#idAttribute1,#idAttribute2]".';
 var ANCHORS_ERROR_TEXT = "The second argument of rikaaaPaging constructor is invalid. The argument type is nodelist of HTML anchor elements.";
 var ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_1 = "'s argument is invalid. The argument is function with return own argument.";
@@ -736,6 +746,7 @@ var rikaaaPaging = function (idAttributes, anchors) {
         finally { if (e_1) throw e_1.error; }
     }
     entires.curve = curve;
+    entires.map = map;
     return entires;
 };
 
