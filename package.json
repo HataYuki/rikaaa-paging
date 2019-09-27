@@ -1,6 +1,6 @@
 {
   "name": "rikaaa-paging",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "main": "dist/rikaaa-paging.js",
   "license": "Apache-2.0",
   "scripts": {
