@@ -197,8 +197,6 @@ var dataParse = function (data) {
     return newData;
 };
 
-if (!self.history || !self.history.pushState)
-    throw new Error("rikaaa-paging.js はこのブラウザに対応していません。");
 /**
  *  history.pushState
  * @param ready Ready

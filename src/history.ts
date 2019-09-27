@@ -2,9 +2,6 @@ import { Ready } from "./takeReady";
 import { dataStringify, dataParse } from "./dataStringify";
 import onebang from "./onebang";
 
-if (!self.history || !self.history.pushState)
-  throw new Error("rikaaa-paging.js はこのブラウザに対応していません。");
-
 /**
  *  history.pushState
  * @param ready Ready
