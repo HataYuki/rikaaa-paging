@@ -388,8 +388,10 @@ var takeStart = function (callback, g, ready, idAttributes) {
     request(ready.href, ready.onProgress, function (response) {
         var callbackArg = {};
         var isResponseOk = response.statusText === "OK" ? true : false;
-        if (!isResponseOk)
+        if (!isResponseOk) {
             self.location.href = ready.href;
+            return false;
+        }
         var keywords = function () {
             if (isResponseOk && response.html)
                 return getMeta("keywords", response.html)[0]
@@ -655,6 +657,17 @@ var callbacks = {};
  */
 var rikaaaPaging = function (idAttributes, anchors) {
     var e_1, _a;
+    self.onpageshow = function (event) {
+        if (event.persisted)
+            self.location.reload();
+    };
+    replaceState({
+        currentUrl: null,
+        href: location.href,
+        afterDelay: 0,
+        onProgress: function () { },
+        onDelay: function () { }
+    }, document.title, self.location.href);
     var resultArg1 = checkingIdAttribute(idAttributes);
     var resultArg2 = checkingAnchors(anchors);
     if (resultArg1.isError)
@@ -697,13 +710,6 @@ var rikaaaPaging = function (idAttributes, anchors) {
             }
         });
     }
-    replaceState({
-        currentUrl: location.href,
-        href: location.href,
-        afterDelay: 0,
-        onProgress: function () { },
-        onDelay: function () { }
-    }, document.title, self.location.href);
     // let phase: Generator;
     var generatorInitialize = function () {
         var phase = generatorPhase();
