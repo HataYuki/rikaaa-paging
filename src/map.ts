@@ -13,3 +13,5 @@ const map = (
   ostart: number,
   ostop: number
 ): number => ostart + (ostop - ostart) * ((value - istart) / (istop - istart));
+
+export default map;
