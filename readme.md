@@ -60,7 +60,7 @@ var entires = rikaaaPaging(ArrayOfIdAttribute,NodeListOfAnchorElement);
 ---
 
 _The method will be triggerd when the anchor element you seted clicked or browser back / forward._  
- *The argument of this method is must be function with return own argument or function with return "false".*
+_The argument of this method is must be function with return own argument or function with return "false"._
 _If the return value is own argument,The process of this plugin will be continu._
 _If the return value is false, The process of this plugin will be cancel._
 
