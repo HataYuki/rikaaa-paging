@@ -5,6 +5,7 @@ import { takeResult } from "./takeResult";
 import { replaceState } from "./history";
 import delay from "./delay";
 import curve from "./curve";
+import map from "./map";
 import Error from "./errorInterface";
 import {
   checkingIdAttribute,
@@ -20,6 +21,7 @@ interface Entires extends Record<string, Function> {
   hookEnd: Function;
   hookResult: Function;
   curve: Function;
+  map: Function;
 }
 type entires = Partial<Entires>;
 const entires: entires = {};
@@ -128,6 +130,7 @@ const rikaaaPaging = (
   for (const value of Object.entries(entires)) value[1]();
 
   entires.curve = curve;
+  entires.map = map;
 
   return entires;
 };
