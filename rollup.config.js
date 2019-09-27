@@ -5,10 +5,12 @@ const path = require("path");
 const input = "src/index.ts";
 const dist = "./dist";
 
-const names = require("./gulpfile");
+const names = require("./config");
 
 const plugins = [
-  ts(),
+  ts({
+    tsconfig: "tsconfig.json"
+  }),
   license({
     banner: {
       file: "./banner.txt",

@@ -1,5 +1,3 @@
-import "./polyfill/Array.from";
-
 /**
  * 引数に指定したelementをdivで囲って、囲ったElementを返す。
  * @param element 囲う対象

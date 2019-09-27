@@ -1,4 +1,3 @@
-import "./polyfill/Array.from";
 /**
  * getMeta metaタグから指定されたname属性をもつElementを返す
  * @param name metaタグのname属性を指定する。

@@ -1,5 +1,4 @@
 import Error from "./errorInterface";
-import "./polyfill/Array.from";
 
 export const IDATTRIBUTE_ERROR_TEXT =
   'The first argument of rikaaaPaging constructor is invalid. The argument type is array of id attribute string. For example "[#idAttribute1,#idAttribute2]".';

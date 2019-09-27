@@ -1,6 +1,6 @@
 /**
  * @license
- * Generated : 2019-09-26
+ * Generated : 2019-09-27
  * Version : 0.5.0
  * Author : rikaaa.org | Yuki Hata
  * Url : http://rikaaa.org
@@ -137,17 +137,10 @@ var handleClick = function (nodeList, callback) {
         nodeList[i].onclick = onClickEv;
 };
 
-// https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Object/entries
-if (!Object.entries) {
-    Object.entries = function (obj) {
-        var ownProps = Object.keys(obj), i = ownProps.length, resArray = new Array(i); // preallocate the Array
-        while (i--)
-            resArray[i] = [ownProps[i], obj[ownProps[i]]];
-        return resArray;
-    };
-}
-
-var _this = undefined;
+/**
+ * rollupでエラーが出るので、ここはアロー関数をやめる。
+ * https://github.com/rollup/rollup/issues/1518
+ */
 var dataStringify = function (data) {
     var e_1, _a;
     var newData = {};
@@ -179,7 +172,7 @@ var dataParse = function (data) {
             var _d = __read(_c.value, 2), key = _d[0], value = _d[1];
             var _value = null;
             if (typeof value === "string" && value.match(/(^function|=>)/)) {
-                _value = Function.call(_this, "return " + value)();
+                _value = Function.call(this, "return " + value)();
             }
             else {
                 _value = value;
@@ -197,8 +190,6 @@ var dataParse = function (data) {
     return newData;
 };
 
-if (!self.history || !self.history.pushState)
-    throw new Error("rikaaa-paging.js はこのブラウザに対応していません。");
 /**
  *  history.pushState
  * @param ready Ready
@@ -239,19 +230,329 @@ var takeReady = function (callback, g, anchors) {
     var callbackArg = {};
     var event = function (event) {
         var isMouseEvent = event.type === "click" || event.type ? true : false;
+        var href = isMouseEvent ? event.target.href : event.href;
+        var different = location.href !== href ? true : false;
         callbackArg.currentUrl = currentUrl;
-        callbackArg.href = isMouseEvent ? event.target.href : event.href;
+        callbackArg.href = href;
         callbackArg.afterDelay = isMouseEvent ? 0 : event.afterDelay;
         callbackArg.onProgress = isMouseEvent ? function () { } : event.onProgress;
         callbackArg.onDelay = isMouseEvent ? function () { } : event.onDelay;
         g.next({
             ready: callback(callbackArg),
-            isPushstate: isMouseEvent ? true : false
+            isPushstate: isMouseEvent && different ? true : false
         });
     };
     handleClick(anchors, event);
     handlePopstate(event);
 };
+
+var oReq = new XMLHttpRequest();
+var HTMLtextToHTMLElement = function (text) {
+    var newHTMLElement = document.createElement("html");
+    var innerHTMLText = text.match(/<html[^>]*>([\s\S.]*)<\/html>/i)[1];
+    newHTMLElement.innerHTML = innerHTMLText;
+    return newHTMLElement;
+};
+/**
+ * XMLHttpRequest
+ * @param url リクエストをかけるURL、
+ * @param timeout タイムアウトを設定
+ * @param callback 指定した関数の引数として取得情報を渡す
+ */
+var request = function (url, onProgress, callback) {
+    oReq.abort();
+    oReq.open("GET", url, true);
+    oReq.onprogress = function (oEvent) {
+        if (oEvent.lengthComputable) {
+            var percentComplete = (oEvent.loaded / oEvent.total) * 100;
+            onProgress({ percentComplete: percentComplete });
+        }
+        else {
+            onProgress({ percentComplete: null });
+        }
+    };
+    oReq.onreadystatechange = function () {
+        if (oReq.readyState === 4) {
+            callback({
+                html: oReq.status === 200 ? HTMLtextToHTMLElement(oReq.response) : null,
+                status: oReq.status,
+                statusText: oReq.statusText,
+                url: url
+            });
+        }
+    };
+    oReq.send();
+};
+
+/**
+ * getMeta metaタグから指定されたname属性をもつElementを返す
+ * @param name metaタグのname属性を指定する。
+ * @param document document
+ */
+var getMeta = function (name, document) {
+    return Array.from(document.querySelectorAll("meta")).filter(function (meta) {
+        return meta.getAttribute("name") === name;
+    });
+};
+
+/**
+ * XMLHttprequest通信終了時、データを返す
+ * @param callback startCallback
+ * @param g generator
+ * @param ready takeAnchorsClickの戻り値
+ * @param idAttributes 更新対象のnodeのID
+ */
+var takeStart = function (callback, g, ready, idAttributes) {
+    request(ready.href, ready.onProgress, function (response) {
+        var callbackArg = {};
+        var isResponseOk = response.statusText === "OK" ? true : false;
+        if (!isResponseOk) {
+            self.location.href = ready.href;
+            return false;
+        }
+        var keywords = function () {
+            if (isResponseOk && response.html)
+                return getMeta("keywords", response.html)[0]
+                    .getAttribute("content")
+                    .split(",");
+            else
+                return null;
+        };
+        var description = function () {
+            if (isResponseOk && response.html)
+                return getMeta("description", response.html)[0].getAttribute("content");
+            else
+                return null;
+        };
+        callbackArg.ready = ready;
+        callbackArg.idAttributes = idAttributes;
+        callbackArg.nextTargets = isResponseOk
+            ? idAttributes.reduce(function (a, c) {
+                var Obj = {};
+                Obj[c] = response.html.querySelector(c);
+                return __assign(__assign({}, a), Obj);
+            }, {})
+            : null;
+        callbackArg.currentTargets = isResponseOk
+            ? idAttributes.reduce(function (a, c) {
+                var Obj = {};
+                Obj[c] = document.querySelector(c);
+                return __assign(__assign({}, a), Obj);
+            }, {})
+            : null;
+        callbackArg.description = description();
+        callbackArg.keywords = keywords();
+        callbackArg.response = response;
+        callbackArg.title = isResponseOk
+            ? response.html.querySelector("title").textContent
+            : null;
+        callbackArg.afterDelay = 0;
+        callbackArg.onDelay = function () { };
+        g.next(callback(callbackArg));
+    });
+};
+
+/**
+ * 引数に指定したelementをdivで囲って、囲ったElementを返す。
+ * @param element 囲う対象
+ */
+var elementWrap = function (element) {
+    var wrapElement = document.createElement("div");
+    element.parentNode.insertBefore(wrapElement, element);
+    wrapElement.appendChild(element);
+    return wrapElement;
+};
+/**
+ * 引数に指定したelementが囲う要素を外にだし、出された要素を返す。
+ * @param element 囲いそのもの
+ */
+var elementUnwrap = function (element) {
+    var wrapElement = element;
+    var childElement = Array.from(element.childNodes)[0];
+    wrapElement.parentNode.insertBefore(childElement, wrapElement);
+    wrapElement.parentNode.removeChild(wrapElement);
+    return childElement;
+};
+
+/**
+ * HTMLを更新後、その結果を返す
+ * @param callback endCallback
+ * @param g generator
+ * @param start takeGetHTMLの戻り値
+ */
+var takeEnd = function (callback, g, start) {
+    var callbackArg = {};
+    callbackArg.previousTargets = {};
+    callbackArg.updatedTargets = {};
+    start.idAttributes.forEach(function (id) {
+        var previousTarget = document.querySelector(id);
+        callbackArg.previousTargets[id] = previousTarget;
+        var wraped = previousTarget !== null ? elementWrap(previousTarget) : null;
+        if (wraped !== null && start.nextTargets[id] !== null)
+            wraped.removeChild(previousTarget),
+                wraped.appendChild(start.nextTargets[id]);
+        callbackArg.updatedTargets[id] =
+            wraped !== null ? elementUnwrap(wraped) : null;
+    });
+    // change title
+    document.title = start.title;
+    // change meta
+    getMeta("keywords", document)[0].setAttribute("content", start.keywords.join(","));
+    getMeta("description", document)[0].setAttribute("content", start.description);
+    callbackArg.idAttributes = start.idAttributes;
+    callbackArg.afterDelay = 0;
+    callbackArg.newUrl = start.response.url;
+    callbackArg.ready = start.ready;
+    callbackArg.start = start;
+    callbackArg.afterDelay = 0;
+    callbackArg.onDelay = function () { };
+    setTimeout(function () { return g.next(callback(callbackArg)); }, 0);
+};
+
+/**
+ *
+ * @param callback resultCallback
+ * @param g Generator
+ * @param end End
+ */
+var takeResult = function (callback, g, end, isPushstate) {
+    callback({
+        oldUrl: end.ready.currentUrl,
+        newUrl: end.ready.href,
+        updatedTarget: end.updatedTarget,
+        previousTarget: end.previousTarget
+    });
+    if (isPushstate)
+        pushState(end.ready, end.start.title, end.newUrl);
+    setTimeout(function () { return g.next(); }, 0);
+};
+
+/**
+ * 指定時間ディレイする
+ * @param duration ディレイする時間(ms)
+ * @param callback ディレイ中に発火させる関数。コールバックの引数に0.ー1.の値を代入
+ * @param End ディレイ終了後に発火させる関数。callbackの引数が1になった時と同時。
+ */
+var delayMain = function (duration, onDelay, End) {
+    var startTime = performance.now();
+    var req = null, progress, _progress;
+    var step = function (timestamp) {
+        req = requestAnimationFrame(step);
+        if (duration !== 0) {
+            progress = (timestamp - startTime) / duration;
+            _progress = progress >= 1 ? 1 : progress;
+        }
+        else {
+            progress = 1;
+            _progress = 1;
+        }
+        onDelay(_progress);
+        if (_progress >= 1)
+            cancelAnimationFrame(req), End();
+    };
+    req = requestAnimationFrame(step);
+};
+/**
+ * 指定時間分次のyieldの発火を遅らせる。
+ * @param duration 遅らせる時間
+ * @param generator Generatorのインスタンス
+ * @param callback delayが発動するあいだ、発火し続ける関数。引数に0.-1.のパラメーターを返す
+ */
+var delay = function (duration, g, callback) {
+    delayMain(duration, callback, function () {
+        g.next();
+    });
+};
+
+var LINER = "LINEAR";
+var EASE_IN = "EASE_IN";
+var EASE_OUT = "EASE_OUT";
+var EASE_IN_OUT = "EASE_IN_OUT";
+var curve = function (type, value) {
+    switch (type) {
+        case LINER:
+            return value;
+        case EASE_IN:
+            return value * value;
+        case EASE_OUT:
+            return value * (2 - value);
+        case EASE_IN_OUT:
+            return value < 0.5 ? 2 * value * value : -1 + (4 - 2 * value) * value;
+        default:
+            return value;
+    }
+};
+
+/**
+ * 特定の範囲で変化する値を特定の範囲の値に変更する。
+ * @param value 変更したい値
+ * @param istart 変更したい値の最小値
+ * @param istop 変更したい値の最大値
+ * @param ostart 変更後の最小値
+ * @param ostop 変更後の最大値
+ */
+var map = function (value, istart, istop, ostart, ostop) { return ostart + (ostop - ostart) * ((value - istart) / (istop - istart)); };
+
+var IDATTRIBUTE_ERROR_TEXT = 'The first argument of rikaaaPaging constructor is invalid. The argument type is array of id attribute string. For example "[#idAttribute1,#idAttribute2]".';
+var ANCHORS_ERROR_TEXT = "The second argument of rikaaaPaging constructor is invalid. The argument type is nodelist of HTML anchor elements.";
+var ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_1 = "'s argument is invalid. The argument is function with return own argument.";
+var ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_2 = "'s argument is invalid. The argument is function.";
+var notHaveError = { isError: false, errorTxt: "" };
+/**
+ * 引数が、#で始まる文字列の配列であるかを判定する。
+ * @param arg idAttributes
+ */
+var checkingIdAttribute = function (arg) {
+    var haveError = { isError: true, errorTxt: IDATTRIBUTE_ERROR_TEXT };
+    if (!Array.prototype.isPrototypeOf(arg))
+        return haveError;
+    if (arg.filter(function (item) { return typeof item !== "string"; }).length !== 0)
+        return haveError;
+    if (arg.filter(function (item) { return /^#/.test(item); }).length !== arg.length)
+        return haveError;
+    return notHaveError;
+};
+/**
+ * 引数が、アンカーエレメントのノードリストであるかを判定する。
+ * @param arg anchors
+ */
+var checkingAnchors = function (arg) {
+    var haveError = { isError: true, errorTxt: ANCHORS_ERROR_TEXT };
+    var elementArray = Array.from(arg);
+    if (!NodeList.prototype.isPrototypeOf(arg))
+        return haveError;
+    if (elementArray.filter(function (item) { return item.tagName !== "A"; }).length !== 0)
+        return haveError;
+    return notHaveError;
+};
+/**
+ * argが引数を持った関数であるかを判定する。hookResultの時は関数であるかのみ確認する。
+ * @param entiresKeyName entiresのkey
+ * @param arg entires.###()の引数
+ */
+var checkingEntiresFucArg = function (entiresKeyName, arg) {
+    var haveError = {
+        isError: true,
+        errorTxt: entiresKeyName + "()" + ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_1
+    };
+    if (entiresKeyName === "hookResult")
+        haveError.errorTxt = entiresKeyName + "()" + ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_2;
+    if (typeof arg !== "function")
+        return haveError;
+    if (!/return/.test(arg.toString()) && entiresKeyName !== "hookResult")
+        return haveError;
+    return notHaveError;
+};
+
+// https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Object/entries
+if (!Object.entries) {
+    Object.entries = function (obj) {
+        var ownProps = Object.keys(obj), i = ownProps.length, resArray = new Array(i); // preallocate the Array
+        while (i--)
+            resArray[i] = [ownProps[i], obj[ownProps[i]]];
+        return resArray;
+    };
+}
 
 // Production steps of ECMA-262, Edition 6, 22.1.2.1
 if (!Array.from) {
@@ -332,232 +633,32 @@ if (!Array.from) {
     })();
 }
 
-var oReq = new XMLHttpRequest();
-var HTMLtextToHTMLElement = function (text) {
-    var newHTMLElement = document.createElement("html");
-    var innerHTMLText = text.match(/<html[^>]*>([\s\S.]*)<\/html>/i)[1];
-    newHTMLElement.innerHTML = innerHTMLText;
-    return newHTMLElement;
-};
-/**
- * XMLHttpRequest
- * @param url リクエストをかけるURL、
- * @param timeout タイムアウトを設定
- * @param callback 指定した関数の引数として取得情報を渡す
- */
-var request = function (url, onProgress, callback) {
-    oReq.abort();
-    oReq.open("GET", url, true);
-    oReq.onprogress = function (oEvent) {
-        if (oEvent.lengthComputable) {
-            var percentComplete = (oEvent.loaded / oEvent.total) * 100;
-            onProgress({ percentComplete: percentComplete });
-        }
-        else {
-            onProgress({ percentComplete: null });
-        }
-    };
-    oReq.onreadystatechange = function () {
-        if (oReq.readyState === 4) {
-            callback({
-                html: oReq.status === 200 ? HTMLtextToHTMLElement(oReq.response) : null,
-                status: oReq.status,
-                statusText: oReq.statusText,
-                url: url
-            });
-        }
-    };
-    oReq.send();
-};
-
-/**
- * getMeta metaタグから指定されたname属性をもつElementを返す
- * @param name metaタグのname属性を指定する。
- * @param document document
- */
-var getMeta = function (name, document) {
-    return Array.from(document.querySelectorAll("meta")).filter(function (meta) {
-        return meta.getAttribute("name") === name;
-    });
-};
-
-/**
- * XMLHttprequest通信終了時、データを返す
- * @param callback startCallback
- * @param g generator
- * @param ready takeAnchorsClickの戻り値
- * @param idAttribute 更新対象のnodeのID
- */
-var takeStart = function (callback, g, ready, idAttribute) {
-    request(ready.href, ready.onProgress, function (response) {
-        var callbackArg = {};
-        var isResponseOk = response.statusText === "OK" ? true : false;
-        if (!isResponseOk)
-            self.location.href = ready.href;
-        var keywords = function () {
-            if (isResponseOk && response.html)
-                return getMeta("keywords", response.html)[0]
-                    .getAttribute("content")
-                    .split(",");
-            else
-                return null;
-        };
-        var description = function () {
-            if (isResponseOk && response.html)
-                return getMeta("description", response.html)[0].getAttribute("content");
-            else
-                return null;
-        };
-        callbackArg.ready = ready;
-        callbackArg.idAttribute = idAttribute;
-        callbackArg.target = isResponseOk
-            ? response.html.querySelector("#" + idAttribute)
-            : null;
-        callbackArg.classList = isResponseOk
-            ? Array.from(response.html.querySelector("#" + idAttribute).classList)
-            : null;
-        callbackArg.description = description();
-        callbackArg.keywords = keywords();
-        callbackArg.response = response;
-        callbackArg.title = isResponseOk
-            ? response.html.querySelector("title").textContent
-            : null;
-        callbackArg.afterDelay = 0;
-        callbackArg.onDelay = function () { };
-        g.next(callback(callbackArg));
-    });
-};
-
-/**
- * 引数に指定したelementをdivで囲って、囲ったElementを返す。
- * @param element 囲う対象
- */
-var elementWrap = function (element) {
-    var wrapElement = document.createElement("div");
-    element.parentNode.insertBefore(wrapElement, element);
-    wrapElement.appendChild(element);
-    return wrapElement;
-};
-/**
- * 引数に指定したelementが囲う要素を外にだし、出された要素を返す。
- * @param element 囲いそのもの
- */
-var elementUnwrap = function (element) {
-    var wrapElement = element;
-    var childElement = Array.from(element.childNodes)[0];
-    wrapElement.parentNode.insertBefore(childElement, wrapElement);
-    wrapElement.parentNode.removeChild(wrapElement);
-    return childElement;
-};
-
-/**
- * HTMLを更新後、その結果を返す
- * @param callback endCallback
- * @param g generator
- * @param start takeGetHTMLの戻り値
- */
-var takeEnd = function (callback, g, start) {
-    var callbackArg = {};
-    var previousTarget = document.getElementById(start.idAttribute);
-    var wraped = elementWrap(previousTarget);
-    wraped.removeChild(previousTarget);
-    wraped.appendChild(start.target);
-    // change title
-    document.title = start.title;
-    // change meta
-    getMeta("keywords", document)[0].setAttribute("content", start.keywords.join(","));
-    getMeta("description", document)[0].setAttribute("content", start.description);
-    callbackArg.previousTarget = previousTarget;
-    callbackArg.updatedTarget = elementUnwrap(wraped);
-    callbackArg.afterDelay = 0;
-    callbackArg.newUrl = start.response.url;
-    callbackArg.ready = start.ready;
-    callbackArg.start = start;
-    callbackArg.afterDelay = 0;
-    callbackArg.onDelay = function () { };
-    // Promise.resolve().then(() => g.next(callback(callbackArg)));
-    setTimeout(function () { return g.next(callback(callbackArg)); }, 0);
-};
-
-/**
- *
- * @param callback resultCallback
- * @param g Generator
- * @param end End
- */
-var takeResult = function (callback, g, end, isPushstate) {
-    callback({
-        oldUrl: end.ready.currentUrl,
-        newUrl: end.ready.href,
-        updatedTarget: end.updatedTarget,
-        previousTarget: end.previousTarget
-    });
-    if (isPushstate)
-        pushState(end.ready, end.start.title, end.newUrl);
-    // Promise.resolve().then(() => g.next());
-    setTimeout(function () { return g.next(); }, 0);
-};
-
-/**
- * 指定時間ディレイする
- * @param duration ディレイする時間(ms)
- * @param callback ディレイ中に発火させる関数。コールバックの引数に0.ー1.の値を代入
- * @param End ディレイ終了後に発火させる関数。callbackの引数が1になった時と同時。
- */
-var delayMain = function (duration, onDelay, End) {
-    var startTime = null, req = null;
-    var step = function (timestamp) {
-        if (!startTime)
-            startTime = timestamp;
-        var progressTime = timestamp - startTime;
-        if (progressTime <= duration)
-            (req = requestAnimationFrame(step)),
-                onDelay(duration === 0 ? 0 : progressTime / duration);
-        else
-            cancelAnimationFrame(req), onDelay(1), End();
-    };
-    req = requestAnimationFrame(step);
-};
-/**
- * 指定時間分次のyieldの発火を遅らせる。
- * @param duration 遅らせる時間
- * @param generator Generatorのインスタンス
- * @param callback delayが発動するあいだ、発火し続ける関数。引数に0.-1.のパラメーターを返す
- */
-var delay = function (duration, g, callback) {
-    delayMain(duration, callback, function () {
-        g.next();
-    });
-};
-
-var LINER = "LINEAR";
-var EASE_IN = "EASE_IN";
-var EASE_OUT = "EASE_OUT";
-var EASE_IN_OUT = "EASE_IN_OUT";
-var curve = function (type, value) {
-    switch (type) {
-        case LINER:
-            return value;
-        case EASE_IN:
-            return value * value;
-        case EASE_OUT:
-            return value * (2 - value);
-        case EASE_IN_OUT:
-            return value < 0.5 ? 2 * value * value : -1 + (4 - 2 * value) * value;
-        default:
-            return value;
-    }
-};
-
 var entires = {};
 var callbacks = {};
 /**
  * rikaaaPaging constructor
- * @param idAttribute id attribute of target tag
- * @param anchors nodelist of a tag
+ * @param idAttributes array of id attribute. The id attribute is update target.
+ * @param anchors nodelist of HTML anchor elements.
  */
-var rikaaaPaging = function (idAttribute, anchors) {
+var rikaaaPaging = function (idAttributes, anchors) {
     var e_1, _a;
+    self.onpageshow = function (event) {
+        if (event.persisted)
+            self.location.reload();
+    };
+    replaceState({
+        currentUrl: null,
+        href: location.href,
+        afterDelay: 0,
+        onProgress: function () { },
+        onDelay: function () { }
+    }, document.title, self.location.href);
+    var resultArg1 = checkingIdAttribute(idAttributes);
+    var resultArg2 = checkingAnchors(anchors);
+    if (resultArg1.isError)
+        throw new Error(resultArg1.errorTxt);
+    if (resultArg2.isError)
+        throw new Error(resultArg2.errorTxt);
     function generatorPhase() {
         var phase, _a, ready, isPushstate, start, end;
         return __generator(this, function (_b) {
@@ -567,25 +668,25 @@ var rikaaaPaging = function (idAttribute, anchors) {
                     phase = _b.sent();
                     _b.label = 2;
                 case 2:
-                    return [4 /*yield*/, takeReady(callbacks.ready, phase, anchors)];
+                    return [4 /*yield*/, takeReady(callbacks.hookReady, phase, anchors)];
                 case 3:
                     _a = _b.sent(), ready = _a.ready, isPushstate = _a.isPushstate;
                     return [4 /*yield*/, delay(ready.afterDelay, phase, ready.onDelay)];
                 case 4:
                     _b.sent();
-                    return [4 /*yield*/, takeStart(callbacks.start, phase, ready, idAttribute)];
+                    return [4 /*yield*/, takeStart(callbacks.hookStart, phase, ready, idAttributes)];
                 case 5:
                     start = _b.sent();
                     return [4 /*yield*/, delay(start.afterDelay, phase, start.onDelay)];
                 case 6:
                     _b.sent();
-                    return [4 /*yield*/, takeEnd(callbacks.end, phase, start)];
+                    return [4 /*yield*/, takeEnd(callbacks.hookEnd, phase, start)];
                 case 7:
                     end = _b.sent();
                     return [4 /*yield*/, delay(end.afterDelay, phase, end.onDelay)];
                 case 8:
                     _b.sent();
-                    return [4 /*yield*/, takeResult(callbacks.result, phase, end, isPushstate)];
+                    return [4 /*yield*/, takeResult(callbacks.hookResult, phase, end, isPushstate)];
                 case 9:
                     _b.sent();
                     return [3 /*break*/, 2];
@@ -593,48 +694,35 @@ var rikaaaPaging = function (idAttribute, anchors) {
             }
         });
     }
-    replaceState({
-        currentUrl: location.href,
-        href: location.href,
-        afterDelay: 0,
-        onProgress: function () { },
-        onDelay: function () { }
-    }, document.title, self.location.href);
     // let phase: Generator;
     var generatorInitialize = function () {
         var phase = generatorPhase();
         phase.next();
         phase.next(phase);
     };
-    entires.ready = function (callback) {
+    /**
+     * entiresの関数を初期化する
+     * @param key hookReady | hookStart | hookEnd | hookResult
+     * @param callback
+     */
+    var entiresInitialize = function (key, callback) {
         if (typeof callback === "undefined")
             callback = function (data) { return data; };
-        callbacks.ready = callback;
+        var result = checkingEntiresFucArg(key, callback);
+        if (result.isError)
+            throw new Error(result.errorTxt);
+        callbacks[key] = callback;
         generatorInitialize();
-        return entires;
+        if (key !== "hookResult")
+            return entires;
     };
-    entires.start = function (callback) {
-        if (typeof callback === "undefined")
-            callback = function (data) { return data; };
-        callbacks.start = callback;
-        generatorInitialize();
-        return entires;
-    };
-    entires.end = function (callback) {
-        if (typeof callback === "undefined")
-            callback = function (data) { return data; };
-        callbacks.end = callback;
-        generatorInitialize();
-        return entires;
-    };
-    entires.result = function (callback) {
-        if (typeof callback === "undefined")
-            callback = function () { };
-        callbacks.result = callback;
-        generatorInitialize();
-    };
-    entires.curve = curve;
+    ["hookReady", "hookStart", "hookEnd", "hookResult"].forEach(function (key) {
+        entires[key] = function (callback) {
+            return entiresInitialize(key, callback);
+        };
+    });
     try {
+        // ready start end resultをそれぞれ一回実行する。
         for (var _b = __values(Object.entries(entires)), _c = _b.next(); !_c.done; _c = _b.next()) {
             var value = _c.value;
             value[1]();
@@ -647,6 +735,8 @@ var rikaaaPaging = function (idAttribute, anchors) {
         }
         finally { if (e_1) throw e_1.error; }
     }
+    entires.curve = curve;
+    entires.map = map;
     return entires;
 };
 

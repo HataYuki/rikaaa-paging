@@ -1,4 +1,3 @@
-import "./polyfill/Array.from";
 import { request, Response } from "./request";
 import { Ready } from "./takeReady";
 import getMeta from "./getMeta";
