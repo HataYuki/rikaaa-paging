@@ -1,5 +1,3 @@
-import "./polyfill/Array.from";
-
 /**
  * 引数に指定したelementをdivで囲って、囲ったElementを返す。
  * @param element 囲う対象
@@ -13,8 +11,8 @@ const elementWrap = (element: Element): Element => {
 };
 
 /**
- * 引数に指定したelementが囲う要素を外に出す。
- * @param element 囲っている対象
+ * 引数に指定したelementが囲う要素を外にだし、出された要素を返す。
+ * @param element 囲いそのもの
  */
 const elementUnwrap = (element: Element): Element => {
   const wrapElement = element;

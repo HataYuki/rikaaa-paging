@@ -4,12 +4,25 @@ import getMeta from "./getMeta";
 import { elementWrap, elementUnwrap } from "./elementWrap";
 
 export interface End
-  extends Record<string, Element | string | number | Ready | Start> {
-  updatedTarget: Element;
+  extends Record<
+    string,
+    | Element
+    | string
+    | number
+    | Function
+    | Ready
+    | Start
+    | Record<string, Element | null>
+    | Array<string>
+  > {
+  idAttributes: Array<string>;
+  previousTargets: Record<string, Element | null>;
+  updatedTargets: Record<string, Element | null>;
   newUrl: string;
-  delay: number;
+  afterDelay: number;
   ready: Ready;
   start: Start;
+  onDelay: Function;
 }
 
 /**
@@ -17,36 +30,53 @@ export interface End
  * @param callback endCallback
  * @param g generator
  * @param start takeGetHTMLの戻り値
+ * @param initializer Generatorを初期化する関数。
  */
 export const takeEnd = (
   callback: Function,
   g: Generator,
-  start: Start
+  start: Start,
+  initializer: Function
 ): void => {
-  const updateTargetElement = document.getElementById(start.idAttribute);
-  const wraped = elementWrap(updateTargetElement);
-  wraped.removeChild(updateTargetElement);
-  wraped.append(start.target);
+  const callbackArg: Partial<End> = {};
+  callbackArg.previousTargets = {};
+  callbackArg.updatedTargets = {};
 
-  const updatedTarget = elementUnwrap(wraped);
+  start.idAttributes.forEach(id => {
+    const previousTarget = document.querySelector(id);
+    callbackArg.previousTargets[id] = previousTarget;
+
+    const wraped = previousTarget !== null ? elementWrap(previousTarget) : null;
+
+    if (wraped !== null && start.nextTargets[id] !== null)
+      wraped.removeChild(previousTarget),
+        wraped.appendChild(start.nextTargets[id]);
+
+    callbackArg.updatedTargets[id] =
+      wraped !== null ? elementUnwrap(wraped) : null;
+  });
 
   // change title
   document.title = start.title;
   // change meta
-  const metaKeywords = getMeta("keywords", document)[0];
-  const metaDescription = getMeta("description", document)[0];
-  metaKeywords.setAttribute("content", start.keywords.join(","));
-  metaDescription.setAttribute("content", start.description);
+  getMeta("keywords", document)[0].setAttribute(
+    "content",
+    start.keywords.join(",")
+  );
+  getMeta("description", document)[0].setAttribute(
+    "content",
+    start.description
+  );
 
-  const modifiedData = callback({
-    updatedTarget,
-    delay: 0,
-    url: start.response.url,
-    ready: start.ready,
-    start: start
-  });
+  callbackArg.idAttributes = start.idAttributes;
+  callbackArg.afterDelay = 0;
+  callbackArg.newUrl = start.response.url;
+  callbackArg.ready = start.ready;
+  callbackArg.start = start;
+  callbackArg.afterDelay = 0;
+  callbackArg.onDelay = (): void => {};
 
-  Promise.resolve().then(() => {
-    g.next(modifiedData);
-  });
+  const config = callback(callbackArg);
+  if (config) setTimeout(() => g.next(callback(callbackArg)), 0);
+  else setTimeout(() => initializer(), 0);
 };

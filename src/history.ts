@@ -1,8 +1,6 @@
 import { Ready } from "./takeReady";
 import { dataStringify, dataParse } from "./dataStringify";
-
-if (!self.history || !self.history.pushState)
-  throw new Error("rikaaa-paging.js はこのブラウザに対応していません。");
+import onebang from "./onebang";
 
 /**
  *  history.pushState
@@ -33,7 +31,8 @@ export const replaceState = (
  * @param callback
  */
 export const handlePopstate = (callback: Function): void => {
+  const once = onebang(callback);
   self.onpopstate = (event: PopStateEvent): void => {
-    callback(dataParse({ ...event.state }));
+    once(dataParse({ ...event.state }));
   };
 };

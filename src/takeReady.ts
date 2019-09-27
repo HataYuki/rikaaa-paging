@@ -1,49 +1,55 @@
 import handleClick from "./handleClick";
 import { handlePopstate } from "./history";
 
-export interface Ready extends Record<string, string | number | Function> {
+export interface Ready {
+  currentUrl: string;
   href: string;
-  delay: number;
-  timeout: number;
+  afterDelay: number;
   onProgress: Function;
+  onDelay: Function;
+}
+
+interface ReadyEvent extends Ready, MouseEvent {
+  target: HTMLAnchorElement;
 }
 
 /**
- * クリック時にReadyを返す；
+ * クリック/onpopstate時にReadyを返す
  * @param callback readyCallback
  * @param g generator
  * @param anchors nodeList of anchors
+ *  @param initializer Generatorを初期化する関数。
  */
 export const takeReady = (
   callback: Function,
   g: Generator,
-  anchors: Element[]
+  anchors: NodeListOf<HTMLAnchorElement>,
+  initalizer: Function
 ): void => {
-  const clickEv = (event: { target: HTMLAnchorElement }): void => {
-    const modifiedData = callback({
-      href: event.target.href,
-      deley: 0,
-      timeout: 1000,
-      onProgress: () => {}
-    });
+  const currentUrl = location.href;
+  const callbackArg: Partial<Ready> = {};
 
-    g.next({
-      ready: modifiedData,
-      isPushstate: true
-    });
+  const event = (event: ReadyEvent): void => {
+    const isMouseEvent = event.type === "click" || event.type ? true : false;
+    const href = isMouseEvent ? event.target.href : event.href;
+    const different = location.href !== href ? true : false;
+
+    callbackArg.currentUrl = currentUrl;
+    callbackArg.href = href;
+    callbackArg.afterDelay = isMouseEvent ? 0 : event.afterDelay;
+    callbackArg.onProgress = isMouseEvent ? (): void => {} : event.onProgress;
+    callbackArg.onDelay = isMouseEvent ? (): void => {} : event.onDelay;
+
+    const config = callback(callbackArg);
+
+    if (config)
+      g.next({
+        ready: config,
+        isPushstate: isMouseEvent && different ? true : false
+      });
+    else initalizer();
   };
 
-  handleClick(anchors, clickEv);
-
-  const popstateEv = (ready: Ready): void => {
-    const modifiedData = callback({
-      ...ready
-    });
-    g.next({
-      ready: modifiedData,
-      isPushstate: false
-    });
-  };
-
-  handlePopstate(popstateEv);
+  handleClick(anchors, event);
+  handlePopstate(event);
 };
