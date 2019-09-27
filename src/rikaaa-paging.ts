@@ -14,6 +14,7 @@ import {
 } from "./error.constructor";
 
 import "./polyfill/Object.entries";
+import "./polyfill/Array.from";
 
 interface Entires extends Record<string, Function> {
   hookReay: Function;

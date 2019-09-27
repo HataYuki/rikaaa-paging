@@ -1,5 +1,4 @@
 import { Ready } from "./takeReady";
-import "./polyfill/Object.entries";
 export const dataStringify = (data: Ready): Record<string, string | number> => {
   const newData = {};
 
