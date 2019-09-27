@@ -499,6 +499,7 @@ var takeEnd = function (callback, g, start) {
     getMeta("description", document)[0].setAttribute("content", start.description);
     // callbackArg.previousTarget = previousTarget;
     // callbackArg.updatedTarget = elementUnwrap(wraped);
+    callbackArg.idAttributes = start.idAttributes;
     callbackArg.afterDelay = 0;
     callbackArg.newUrl = start.response.url;
     callbackArg.ready = start.ready;
@@ -630,7 +631,7 @@ var checkingEntiresFucArg = function (entiresKeyName, arg) {
         haveError.errorTxt = entiresKeyName + "()" + ENTIRES_ARG_FUNC_DONT_HAVE_RETUREN_VAL_ERROR_TEXT_2;
     if (typeof arg !== "function")
         return haveError;
-    if (!arg(true) && entiresKeyName !== "hookResult")
+    if (!/return/.test(arg.toString()) && entiresKeyName !== "hookResult")
         return haveError;
     return notHaveError;
 };

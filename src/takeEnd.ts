@@ -13,7 +13,9 @@ export interface End
     | Ready
     | Start
     | Record<string, Element | null>
+    | Array<string>
   > {
+  idAttributes: Array<string>;
   previousTargets: Record<string, Element | null>;
   updatedTargets: Record<string, Element | null>;
   newUrl: string;
@@ -71,6 +73,7 @@ export const takeEnd = (
 
   // callbackArg.previousTarget = previousTarget;
   // callbackArg.updatedTarget = elementUnwrap(wraped);
+  callbackArg.idAttributes = start.idAttributes;
   callbackArg.afterDelay = 0;
   callbackArg.newUrl = start.response.url;
   callbackArg.ready = start.ready;
