@@ -66,7 +66,11 @@ const rikaaaPaging = (
   if (resultArg2.isError) throw new Error(resultArg2.errorTxt);
 
   function* generatorPhase(): Generator<void, Generator, any> {
-    const phase: Generator = yield;
+    const {
+      phase,
+      generatorInitialize
+    }: { phase: Generator; generatorInitialize: Function } = yield;
+
     while (true) {
       const {
         ready,
@@ -74,7 +78,8 @@ const rikaaaPaging = (
       }: { ready: Ready; isPushstate: boolean } = yield takeReady(
         callbacks.hookReady,
         phase,
-        anchors
+        anchors,
+        generatorInitialize
       );
 
       yield delay(ready.afterDelay, phase, ready.onDelay);
@@ -83,12 +88,18 @@ const rikaaaPaging = (
         callbacks.hookStart,
         phase,
         ready,
-        idAttributes
+        idAttributes,
+        generatorInitialize
       );
 
       yield delay(start.afterDelay, phase, start.onDelay);
 
-      const end: End = yield takeEnd(callbacks.hookEnd, phase, start);
+      const end: End = yield takeEnd(
+        callbacks.hookEnd,
+        phase,
+        start,
+        generatorInitialize
+      );
 
       yield delay(end.afterDelay, phase, end.onDelay);
 
@@ -100,7 +111,7 @@ const rikaaaPaging = (
   const generatorInitialize = (): void => {
     const phase = generatorPhase();
     phase.next();
-    phase.next(phase);
+    phase.next({ phase, generatorInitialize });
   };
 
   /**

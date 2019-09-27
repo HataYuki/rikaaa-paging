@@ -19,10 +19,8 @@ export interface Start
   > {
   ready: Ready;
   idAttributes: Array<string>;
-  // targets: Record<string, Element | null> | null;
   currentTargets: Record<string, Element | null> | null;
   nextTargets: Record<string, Element | null> | null;
-  // classLists: Record<string, Element | null> | null;
   title: string | null;
   keywords: Array<string> | null;
   description: string | null;
@@ -36,12 +34,14 @@ export interface Start
  * @param g generator
  * @param ready takeAnchorsClickの戻り値
  * @param idAttributes 更新対象のnodeのID
+ * @param initializer Generatorを初期化する関数。
  */
 export const takeStart = (
   callback: Function,
   g: Generator,
   ready: Ready,
-  idAttributes: Array<string>
+  idAttributes: Array<string>,
+  initializer: Function
 ): void => {
   request(ready.href, ready.onProgress, (response: Response):
     | void
@@ -69,9 +69,6 @@ export const takeStart = (
 
     callbackArg.ready = ready;
     callbackArg.idAttributes = idAttributes;
-    // callbackArg.targets = isResponseOk
-    //   ? response.html.querySelectorAll(`#${idAttribute}`)
-    //   : null;
     callbackArg.nextTargets = isResponseOk
       ? idAttributes.reduce((a, c) => {
           const Obj = {};
@@ -86,18 +83,6 @@ export const takeStart = (
           return { ...a, ...Obj };
         }, {})
       : null;
-    // callbackArg.classList = isResponseOk
-    //   ? Array.from(response.html.querySelector(`#${idAttribute}`).classList)
-    //   : null;
-    // callbackArg.classLists = isResponseOk
-    //   ? idAttributes.reduce((a, c) => {
-    //       const Obj = {};
-    //       const targetElement = response.html.querySelector(c);
-    //       Obj[c] = targetElement !== null ? targetElement.classList : null;
-    //       // return Object.assign(a, Obj);
-    //       return { ...a, ...Obj };
-    //     }, {})
-    //   : null;
     callbackArg.description = description();
     callbackArg.keywords = keywords();
     callbackArg.response = response;
@@ -107,6 +92,8 @@ export const takeStart = (
     callbackArg.afterDelay = 0;
     callbackArg.onDelay = (): void => {};
 
-    g.next(callback(callbackArg));
+    const config = callback(callbackArg);
+    if (config) g.next(config);
+    else initializer();
   });
 };
