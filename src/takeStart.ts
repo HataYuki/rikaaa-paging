@@ -43,11 +43,16 @@ export const takeStart = (
   ready: Ready,
   idAttributes: Array<string>
 ): void => {
-  request(ready.href, ready.onProgress, (response: Response): void => {
+  request(ready.href, ready.onProgress, (response: Response):
+    | void
+    | boolean => {
     const callbackArg: Partial<Start> = {};
     const isResponseOk = response.statusText === "OK" ? true : false;
 
-    if (!isResponseOk) self.location.href = ready.href;
+    if (!isResponseOk) {
+      self.location.href = ready.href;
+      return false;
+    }
 
     const keywords = (): Array<string> | null => {
       if (isResponseOk && response.html)

@@ -1,10 +1,10 @@
 window.onload = function() {
   var paging = self.rikaaaPaging(
     ["#header", "#article", "#footer"],
-    this.document.querySelectorAll("a")
+    document.querySelectorAll("a")
   );
 
-  var each = 200;
+  var each = 100;
   var length = 3;
   var duration = each * length;
 
