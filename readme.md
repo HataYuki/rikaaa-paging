@@ -172,10 +172,10 @@ entires.hookEnd(function(config) {
 | config.afterDelay      | number                 | The parameter is delay time. This parameter delay entires.hookResult() method. The default value is 0.                                                                          |
 | config.onDelay         | Function               | The parameter is function. This function will be running while Delaying entires.hookResult() method. The progress value of delay will be assigned to argument of this function. |
 
-- **・entires.hookResult()**  
-  _This method will be triggerd when just before history.pushState/history.replaceState._  
-  _If you set "config.afterDelay" parameter with "hookEnd" function. this function will be delay._  
-  _The argument of this method is function without return value._
+**・entires.hookResult()**  
+ _This method will be triggerd when just before history.pushState/history.replaceState._  
+ _If you set "config.afterDelay" parameter with "hookEnd" function. this function will be delay._  
+ _The argument of this method is function without return value._
 
 ```bash
 var entires = rikaaaPaging(["#header", "#article", "#footer"],document.querySelectorAll("a"));
@@ -185,8 +185,6 @@ entires.hookResult(function(config) {
     config.newUrl;
     config.updatedTarget;
     config.previousTarget;
-
-    return config;
 });
 ```
 
