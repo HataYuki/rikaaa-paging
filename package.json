@@ -13,6 +13,16 @@
     "email": "yhata.01@gmail.com",
     "url": "http://rikaaa.org"
   },
+  "keywords": [
+    "page",
+    "transition",
+    "Ajax",
+    "pushstate",
+    "Generator",
+    "XMLHttpRequest",
+    "client",
+    "rikaaa"
+  ],
   "devDependencies": {
     "@types/mocha": "^5.2.7",
     "@types/power-assert": "^1.5.0",
